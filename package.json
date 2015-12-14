@@ -1,0 +1,42 @@
+{
+  "name": "decouter",
+  "version": "0.0.0",
+  "main": "dist",
+  "author": "Pedram Emrouznejad (https://github.com/pemrouz)",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/rijs/decouter.git"
+  },
+  "scripts": {
+    "ignore:build:1": "find ./dist/index.js -type f -exec sed -i -E \"s/function _interopRequire/\\/* istanbul ignore next *\\/\\nfunction _interopRequire/g\" {} ;",
+    "ignore:build:2": "find ./dist/index.js -type f -exec sed -i -E \"s/^(.*arguments\\[1\\] === undefined)/\\/* istanbul ignore next *\\/\\n\\1/g\" {} ;",
+    "ignore:build": "npm run ignore:build:1 && npm run ignore:build:2",
+    "ignore:test": "find ./dist/test.js -type f -exec sed -i \"s/function _interopRequire/\\/* istanbul ignore next *\\/\\nfunction _interopRequire/g\" {} ;",
+    "bundle": "browserify dist/index.js -o dist/decouter.js -i **/utilise/**/*.js",
+    "babel": "babel src -d dist",
+    "clean": "rm -rf dist && mkdir dist",
+    "build": "npm run clean && npm run babel && npm run bundle && npm run ignore:build",
+    "test": " babel test.js > dist/test.js && npm run ignore:test && istanbul test ./node_modules/mocha/bin/_mocha dist/test.js --report html -- -R spec && rm dist/test.js",
+    "coverage": "babel test.js > dist/test.js && npm run ignore:test && istanbul cover ./node_modules/mocha/bin/_mocha dist/test.js --report lcovonly -- -R spec && rm -rf ./coverage && rm dist/test.js",
+    "cov": "babel test.js > dist/test.js && npm run ignore:test && istanbul cover ./node_modules/mocha/bin/_mocha dist/test.js -- -R spec",
+    "version": "npm run build && git add -A",
+    "postversion": "git push && git push --tags"
+  },
+  "license": "pemrouz.mit-license.org",
+  "devDependencies": {
+    "babel-cli": "*",
+    "babel-preset-es2015": "*",
+    "browserify": "*",
+    "chai": "*",
+    "coveralls": "*",
+    "istanbul": "*",
+    "mocha": "*",
+    "mocha-lcov-reporter": "*",
+    "mockery": "^1.4.0",
+    "popper": "*",
+    "uglify-js": "*"
+  },
+  "dependencies": {
+    "utilise": "*"
+  }
+}
