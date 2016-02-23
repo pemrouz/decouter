@@ -8,10 +8,10 @@
     "url": "git://github.com/rijs/decouter.git"
   },
   "scripts": {
-    "ignore:build:1": "find ./dist/index.js -type f -exec sed -i -E \"s/function _interopRequire/\\/* istanbul ignore next *\\/\\nfunction _interopRequire/g\" {} ;",
-    "ignore:build:2": "find ./dist/index.js -type f -exec sed -i -E \"s/^(.*arguments\\[1\\] === undefined)/\\/* istanbul ignore next *\\/\\n\\1/g\" {} ;",
+    "ignore:build:1": "sh -c 'find ./dist/index.js -type f -exec sed -i -E \"s/function _interopRequire/\\/* istanbul ignore next *\\/\\nfunction _interopRequire/g\" {} \\;'",
+    "ignore:build:2": "sh -c 'find ./dist/index.js -type f -exec sed -i -E \"s/^(.*arguments\\[1\\] === undefined)/\\/* istanbul ignore next *\\/\\n\\1/g\" {} \\;'",
     "ignore:build": "npm run ignore:build:1 && npm run ignore:build:2",
-    "ignore:test": "find ./dist/test.js -type f -exec sed -i \"s/function _interopRequire/\\/* istanbul ignore next *\\/\\nfunction _interopRequire/g\" {} ;",
+    "ignore:test": "sh -c 'find ./dist/test.js -type f -exec sed -i \"s/function _interopRequire/\\/* istanbul ignore next *\\/\\nfunction _interopRequire/g\" {} \\;'",
     "bundle": "browserify dist/index.js -o dist/decouter.js -i **/utilise/**/*.js",
     "babel": "babel src -d dist",
     "clean": "rm -rf dist && mkdir dist",
