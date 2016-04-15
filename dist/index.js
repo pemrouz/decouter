@@ -38,7 +38,7 @@ var extract = function extract(routes) {
   };
 };
 var go = function go(url) {
-  return (d3 && d3.event && d3.event.preventDefault(), true), history.pushState({}, '', url), window.emit('change'), url;
+  return (window.event && window.event.preventDefault(), true), history.pushState({}, '', url), window.emit('change'), url;
 };
 
 // redirect to url we should be on

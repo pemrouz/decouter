@@ -6,7 +6,7 @@ import last from 'utilise/last'
 const log     = require('utilise/log')('[router]')
 const strip   = d => last(d) == '?' ? d.slice(1, -1) : d.slice(1)
 const extract = (routes, o = {}) => page => routes.some(r => o = match(page)(r)) ? o : false
-const go      = url => ((d3 && d3.event && d3.event.preventDefault(), true)
+const go      = url => ((window.event && window.event.preventDefault(), true)
                   , history.pushState({}, '', url)
                   , window.emit('change')
                   , url)
