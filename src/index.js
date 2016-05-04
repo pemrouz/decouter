@@ -1,54 +1,58 @@
 import emitterify from 'utilise/emitterify'
 import client from 'utilise/client'
-import first from 'utilise/first'
-import last from 'utilise/last'
+import keys from 'utilise/keys'
 
-const log     = require('utilise/log')('[router]')
-const strip   = d => last(d) == '?' ? d.slice(1, -1) : d.slice(1)
-const extract = (routes, o = {}) => page => routes.some(r => o = match(page)(r)) ? o : false
-const go      = url => ((window.event && window.event.preventDefault(), true)
-                  , history.pushState({}, '', url)
-                  , window.emit('change')
-                  , url)
+const log = require('utilise/log')('[router]')
+const go  = url => ((window.event && window.event.preventDefault(), true)
+                   , history.pushState({}, '', url)
+                   , window.emit('change')
+                   , url)
 
-// redirect to url we should be on
-export default function router(routes){ 
-  return !client ? resolve : resolve({ url: location.pathname }) 
+const router = resolve => {
+  return !client ? route : route({ url: location.pathname }) 
 
-  function resolve(req, res, next) {
-    const from   = req.url
-        , params = req.params = extract(routes)(from)
-        , to     = routes.redirects ? routes.redirects(req) : from
+  function route(req, res, next) { 
+    const from = req.url
+        , resolved = resolve(req)
+        , to = resolved.url
 
-    if (from != to) log('router redirecting', from, to)
+    if (from !== to) log('router redirecting', from, to)
 
-    return  client && from !== to ? { params: extract(routes)(to), url: go(to) }
-         : !client && from !== to ? res.redirect(to)
-         : !client                ? next()
-         : { params, url: to }
-  }
+    return client && from !== to ? (go(to), resolved)
+        : !client && from !== to ? res.redirect(to)
+        : !client                ? next()
+        : resolved
+  } 
 }
 
+const resolve = root => (req, from) => {
+  const params = {}
+      , url = from || req.url
+      , to = root({ req, params, next: next(req, url, params) })
 
-// match page parts against candidate route parts
-function match(page) {
-  return function (route) {
-    var partsRoute = route.split('/').filter(Boolean)
-      , partsPage  = page.split('/').filter(Boolean)
-      , vars = {}
+  return to !== true ? resolve(root)(req, to)
+       : { url, params }
+}
 
-    return partsRoute.every(matches) ? vars : false
+const next = (req, url, params) => handlers => {
+  var { first, last } = segment(url)
+    , li = keys(handlers)
+    , pm = li[0][0] == ':' ? li[0] : null
+    , to = ''
 
-    function matches(d, i) {
-      const r = partsRoute[i]
-          , p = partsPage[i]
+  if (pm) {
+    params[pm.slice(1)] = first
+    to = handlers[pm]({ req, next: next(req, last, params), params }) 
+  } else if (first in handlers)
+    to = handlers[first]({ req, next: next(req, last, params), params })
 
-      return r == p          ? true                       // fixed segment
-           : last(r)  == '?' ? (vars[strip(r)] = p, true) // optional variable segment
-           : first(r) == ':' ? (vars[strip(r)] = p)       // variable segment
-           : false
-    }
-  }
+  // console.log(url, to, pm)
+  return to
+}
+
+function segment(url) {
+  const segments = url.split('/').filter(Boolean)
+  return { first: segments.shift(), last: segments.join('/') }
 }
 
 if (client) {
@@ -56,3 +60,5 @@ if (client) {
   window.go = go
   window.router = router
 }
+
+export { router, resolve }

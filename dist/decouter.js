@@ -4,7 +4,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.default = router;
+exports.resolve = exports.router = undefined;
 
 var _emitterify = require('utilise/emitterify');
 
@@ -14,66 +14,64 @@ var _client = require('utilise/client');
 
 var _client2 = _interopRequireDefault(_client);
 
-var _first = require('utilise/first');
+var _keys = require('utilise/keys');
 
-var _first2 = _interopRequireDefault(_first);
-
-var _last = require('utilise/last');
-
-var _last2 = _interopRequireDefault(_last);
+var _keys2 = _interopRequireDefault(_keys);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var log = require('utilise/log')('[router]');
-var strip = function strip(d) {
-  return (0, _last2.default)(d) == '?' ? d.slice(1, -1) : d.slice(1);
-};
-var extract = function extract(routes) {
-  var o = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
-  return function (page) {
-    return routes.some(function (r) {
-      return o = match(page)(r);
-    }) ? o : false;
-  };
-};
 var go = function go(url) {
   return (window.event && window.event.preventDefault(), true), history.pushState({}, '', url), window.emit('change'), url;
 };
 
-// redirect to url we should be on
-function router(routes) {
-  return !_client2.default ? resolve : resolve({ url: location.pathname });
+var router = function router(resolve) {
+  return !_client2.default ? route : route({ url: location.pathname });
 
-  function resolve(req, res, next) {
+  function route(req, res, next) {
     var from = req.url,
-        params = req.params = extract(routes)(from),
-        to = routes.redirects ? routes.redirects(req) : from;
+        resolved = resolve(req),
+        to = resolved.url;
 
-    if (from != to) log('router redirecting', from, to);
+    if (from !== to) log('router redirecting', from, to);
 
-    return _client2.default && from !== to ? { params: extract(routes)(to), url: go(to) } : !_client2.default && from !== to ? res.redirect(to) : !_client2.default ? next() : { params: params, url: to };
+    return _client2.default && from !== to ? (go(to), resolved) : !_client2.default && from !== to ? res.redirect(to) : !_client2.default ? next() : resolved;
   }
-}
+};
 
-// match page parts against candidate route parts
-function match(page) {
-  return function (route) {
-    var partsRoute = route.split('/').filter(Boolean),
-        partsPage = page.split('/').filter(Boolean),
-        vars = {};
+var resolve = function resolve(root) {
+  return function (req, from) {
+    var params = {},
+        url = from || req.url,
+        to = root({ req: req, params: params, next: next(req, url, params) });
 
-    return partsRoute.every(matches) ? vars : false;
-
-    function matches(d, i) {
-      var r = partsRoute[i],
-          p = partsPage[i];
-
-      return r == p ? true // fixed segment
-      : (0, _last2.default)(r) == '?' ? (vars[strip(r)] = p, true // optional variable segment
-      ) : (0, _first2.default)(r) == ':' ? vars[strip(r)] = p : // variable segment
-      false;
-    }
+    return to !== true ? resolve(root)(req, to) : { url: url, params: params };
   };
+};
+
+var next = function next(req, url, params) {
+  return function (handlers) {
+    var _segment = segment(url);
+
+    var first = _segment.first;
+    var last = _segment.last;
+    var li = (0, _keys2.default)(handlers);
+    var pm = li[0][0] == ':' ? li[0] : null;
+    var to = '';
+
+    if (pm) {
+      params[pm.slice(1)] = first;
+      to = handlers[pm]({ req: req, next: next(req, last, params), params: params });
+    } else if (first in handlers) to = handlers[first]({ req: req, next: next(req, last, params), params: params });
+
+    // console.log(url, to, pm)
+    return to;
+  };
+};
+
+function segment(url) {
+  var segments = url.split('/').filter(Boolean);
+  return { first: segments.shift(), last: segments.join('/') };
 }
 
 if (_client2.default) {
@@ -83,7 +81,10 @@ if (_client2.default) {
   window.go = go;
   window.router = router;
 }
-},{"utilise/client":2,"utilise/emitterify":4,"utilise/first":6,"utilise/last":10,"utilise/log":11}],2:[function(require,module,exports){
+
+exports.router = router;
+exports.resolve = resolve;
+},{"utilise/client":2,"utilise/emitterify":4,"utilise/keys":8,"utilise/log":9}],2:[function(require,module,exports){
 module.exports = typeof window != 'undefined'
 },{}],3:[function(require,module,exports){
 var has = require('utilise/has')
@@ -93,7 +94,7 @@ module.exports = function def(o, p, v, w){
   return o[p]
 }
 
-},{"utilise/has":7}],4:[function(require,module,exports){
+},{"utilise/has":6}],4:[function(require,module,exports){
 var err  = require('utilise/err')('[emitterify]')
   , keys = require('utilise/keys')
   , def  = require('utilise/def')
@@ -148,7 +149,7 @@ module.exports = function emitterify(body) {
     return callback.once = true, body.on(type, callback), body
   }
 }
-},{"utilise/def":3,"utilise/err":5,"utilise/is":8,"utilise/keys":9,"utilise/not":12}],5:[function(require,module,exports){
+},{"utilise/def":3,"utilise/err":5,"utilise/is":7,"utilise/keys":8,"utilise/not":10}],5:[function(require,module,exports){
 var owner = require('utilise/owner')
   , to = require('utilise/to')
 
@@ -160,15 +161,11 @@ module.exports = function err(prefix){
     return console.error.apply(console, args), d
   }
 }
-},{"utilise/owner":13,"utilise/to":14}],6:[function(require,module,exports){
-module.exports = function first(d){
-  return d[0]
-}
-},{}],7:[function(require,module,exports){
+},{"utilise/owner":11,"utilise/to":12}],6:[function(require,module,exports){
 module.exports = function has(o, k) {
   return k in o
 }
-},{}],8:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 module.exports = is
 is.fn     = isFunction
 is.str    = isString
@@ -241,15 +238,11 @@ function isIn(set) {
          : d in set
   }
 }
-},{}],9:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 module.exports = function keys(o) {
   return Object.keys(o || {})
 }
-},{}],10:[function(require,module,exports){
-module.exports =  function last(d) {
-  return d[d.length-1]
-}
-},{}],11:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 var is = require('utilise/is')
   , to = require('utilise/to')
   , owner = require('utilise/owner')
@@ -263,17 +256,17 @@ module.exports = function log(prefix){
     return console.log.apply(console, args), d
   }
 }
-},{"utilise/is":8,"utilise/owner":13,"utilise/to":14}],12:[function(require,module,exports){
+},{"utilise/is":7,"utilise/owner":11,"utilise/to":12}],10:[function(require,module,exports){
 module.exports = function not(fn){
   return function(){
     return !fn.apply(this, arguments)
   }
 }
-},{}],13:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 (function (global){
 module.exports = require('utilise/client') ? /* istanbul ignore next */ window : global
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"utilise/client":2}],14:[function(require,module,exports){
+},{"utilise/client":2}],12:[function(require,module,exports){
 module.exports = { 
   arr: toArray
 , obj: toObject

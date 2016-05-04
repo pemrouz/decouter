@@ -3,7 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.default = router;
+exports.resolve = exports.router = undefined;
 
 var _emitterify = require('utilise/emitterify');
 
@@ -13,68 +13,65 @@ var _client = require('utilise/client');
 
 var _client2 = _interopRequireDefault(_client);
 
-var _first = require('utilise/first');
+var _keys = require('utilise/keys');
 
-var _first2 = _interopRequireDefault(_first);
-
-var _last = require('utilise/last');
-
-var _last2 = _interopRequireDefault(_last);
+var _keys2 = _interopRequireDefault(_keys);
 
 /* istanbul ignore next */
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var log = require('utilise/log')('[router]');
-var strip = function strip(d) {
-  return (0, _last2.default)(d) == '?' ? d.slice(1, -1) : d.slice(1);
-};
-var extract = function extract(routes) {
-/* istanbul ignore next */
-  var o = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
-  return function (page) {
-    return routes.some(function (r) {
-      return o = match(page)(r);
-    }) ? o : false;
-  };
-};
 var go = function go(url) {
   return (window.event && window.event.preventDefault(), true), history.pushState({}, '', url), window.emit('change'), url;
 };
 
-// redirect to url we should be on
-function router(routes) {
-  return !_client2.default ? resolve : resolve({ url: location.pathname });
+var router = function router(resolve) {
+  return !_client2.default ? route : route({ url: location.pathname });
 
-  function resolve(req, res, next) {
+  function route(req, res, next) {
     var from = req.url,
-        params = req.params = extract(routes)(from),
-        to = routes.redirects ? routes.redirects(req) : from;
+        resolved = resolve(req),
+        to = resolved.url;
 
-    if (from != to) log('router redirecting', from, to);
+    if (from !== to) log('router redirecting', from, to);
 
-    return _client2.default && from !== to ? { params: extract(routes)(to), url: go(to) } : !_client2.default && from !== to ? res.redirect(to) : !_client2.default ? next() : { params: params, url: to };
+    return _client2.default && from !== to ? (go(to), resolved) : !_client2.default && from !== to ? res.redirect(to) : !_client2.default ? next() : resolved;
   }
-}
+};
 
-// match page parts against candidate route parts
-function match(page) {
-  return function (route) {
-    var partsRoute = route.split('/').filter(Boolean),
-        partsPage = page.split('/').filter(Boolean),
-        vars = {};
+var resolve = function resolve(root) {
+  return function (req, from) {
+    var params = {},
+        url = from || req.url,
+        to = root({ req: req, params: params, next: next(req, url, params) });
 
-    return partsRoute.every(matches) ? vars : false;
-
-    function matches(d, i) {
-      var r = partsRoute[i],
-          p = partsPage[i];
-
-      return r == p ? true // fixed segment
-      : (0, _last2.default)(r) == '?' ? (vars[strip(r)] = p, true // optional variable segment
-      ) : (0, _first2.default)(r) == ':' ? vars[strip(r)] = p : // variable segment
-      false;
-    }
+    return to !== true ? resolve(root)(req, to) : { url: url, params: params };
   };
+};
+
+var next = function next(req, url, params) {
+  return function (handlers) {
+    var _segment = segment(url);
+
+    var first = _segment.first;
+    var last = _segment.last;
+    var li = (0, _keys2.default)(handlers);
+    var pm = li[0][0] == ':' ? li[0] : null;
+    var to = '';
+
+    if (pm) {
+      params[pm.slice(1)] = first;
+      to = handlers[pm]({ req: req, next: next(req, last, params), params: params });
+    } else if (first in handlers) to = handlers[first]({ req: req, next: next(req, last, params), params: params });
+
+    // console.log(url, to, pm)
+    return to;
+  };
+};
+
+function segment(url) {
+  var segments = url.split('/').filter(Boolean);
+  return { first: segments.shift(), last: segments.join('/') };
 }
 
 if (_client2.default) {
@@ -84,3 +81,6 @@ if (_client2.default) {
   window.go = go;
   window.router = router;
 }
+
+exports.router = router;
+exports.resolve = resolve;

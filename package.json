@@ -5,7 +5,7 @@
   "author": "Pedram Emrouznejad (https://github.com/pemrouz)",
   "repository": {
     "type": "git",
-    "url": "git://github.com/rijs/decouter.git"
+    "url": "git://github.com/pemrouz/decouter.git"
   },
   "scripts": {
     "ignore:build:1": "sh -c 'find ./dist/index.js -type f -exec sed -i -E \"s/function _interopRequire/\\/* istanbul ignore next *\\/\\nfunction _interopRequire/g\" {} \\;'",
@@ -16,9 +16,9 @@
     "babel": "babel src -d dist",
     "clean": "rm -rf dist && mkdir dist",
     "build": "npm run clean && npm run babel && npm run bundle && npm run ignore:build",
-    "test": " babel test.js > dist/test.js && npm run ignore:test && istanbul test ./node_modules/mocha/bin/_mocha dist/test.js --report html -- -R spec && rm dist/test.js",
-    "coverage": "babel test.js > dist/test.js && npm run ignore:test && istanbul cover ./node_modules/mocha/bin/_mocha dist/test.js --report lcovonly -- -R spec && rm -rf ./coverage && rm dist/test.js",
-    "cov": "babel test.js > dist/test.js && npm run ignore:test && istanbul cover ./node_modules/mocha/bin/_mocha dist/test.js -- -R spec",
+    "test": " babel src/test.js > dist/test.js && tap dist/test.js && rm dist/test.js",
+    "coverage": "babel src/test.js > dist/test.js && tap dist/test.js --cov --coverage-report=lcov && rm -rf ./coverage && rm dist/test.js",
+    "cov": "babel src/test.js > dist/test.js && tap dist/test.js --cov --coverage-report=lcov",
     "version": "npm run build && git add -A",
     "postversion": "git push && git push --tags"
   },
@@ -34,6 +34,8 @@
     "mocha-lcov-reporter": "*",
     "mockery": "^1.4.0",
     "popper": "*",
+    "tap": "^5.7.1",
+    "tape": "^4.5.1",
     "uglify-js": "*"
   },
   "dependencies": {
