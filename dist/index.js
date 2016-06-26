@@ -13,9 +13,17 @@ var _client = require('utilise/client');
 
 var _client2 = _interopRequireDefault(_client);
 
+var _parse = require('utilise/parse');
+
+var _parse2 = _interopRequireDefault(_parse);
+
 var _keys = require('utilise/keys');
 
 var _keys2 = _interopRequireDefault(_keys);
+
+var _str = require('utilise/str');
+
+var _str2 = _interopRequireDefault(_str);
 
 /* istanbul ignore next */
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
@@ -25,12 +33,12 @@ var go = function go(url) {
   return (window.event && window.event.preventDefault(), true), history.pushState({}, '', url), window.emit('change'), url;
 };
 
-var router = function router(resolve) {
+var router = function router(routes) {
   return !_client2.default ? route : route({ url: location.pathname });
 
   function route(req, res, next) {
     var from = req.url,
-        resolved = resolve(req),
+        resolved = resolve(routes)(req),
         to = resolved.url;
 
     if (from !== to) log('router redirecting', from, to);
@@ -43,7 +51,7 @@ var resolve = function resolve(root) {
   return function (req, from) {
     var params = {},
         url = from || req.url,
-        to = root({ req: req, params: params, next: next(req, url, params) });
+        to = root({ url: url, req: req, params: params, next: next(req, url, params) });
 
     return to !== true ? resolve(root)(req, to) : { url: url, params: params };
   };
@@ -55,17 +63,16 @@ var next = function next(req, url, params) {
 
     var first = _segment.first;
     var last = _segment.last;
-    var li = (0, _keys2.default)(handlers);
-    var pm = li[0][0] == ':' ? li[0] : null;
     var to = '';
 
-    if (pm) {
-      params[pm.slice(1)] = first;
-      to = handlers[pm]({ req: req, next: next(req, last, params), params: params });
-    } else if (first in handlers) to = handlers[first]({ req: req, next: next(req, last, params), params: params });
+    return first in handlers ? handlers[first]({ req: req, next: next(req, last, params), params: params, current: first }) : (0, _keys2.default)(handlers).filter(function (k) {
+      return k[0] == ':';
+    }).some(function (k) {
+      var pm = k.slice(1);
+      if (to = handlers[k]({ req: req, next: next(req, last, params), params: params, current: first })) params[pm] = first;
 
-    // console.log(url, to, pm)
-    return to;
+      return to;
+    }) && to;
   };
 };
 

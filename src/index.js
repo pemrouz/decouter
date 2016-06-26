@@ -1,6 +1,8 @@
 import emitterify from 'utilise/emitterify'
 import client from 'utilise/client'
+import parse from 'utilise/parse'
 import keys from 'utilise/keys'
+import str from 'utilise/str'
 
 const log = require('utilise/log')('[router]')
 const go  = url => ((window.event && window.event.preventDefault(), true)
@@ -8,12 +10,12 @@ const go  = url => ((window.event && window.event.preventDefault(), true)
                    , window.emit('change')
                    , url)
 
-const router = resolve => {
+const router = routes => {
   return !client ? route : route({ url: location.pathname }) 
 
   function route(req, res, next) { 
     const from = req.url
-        , resolved = resolve(req)
+        , resolved = resolve(routes)(req)
         , to = resolved.url
 
     if (from !== to) log('router redirecting', from, to)
@@ -28,7 +30,7 @@ const router = resolve => {
 const resolve = root => (req, from) => {
   const params = {}
       , url = from || req.url
-      , to = root({ req, params, next: next(req, url, params) })
+      , to = root({ url, req, params, next: next(req, url, params) })
 
   return to !== true ? resolve(root)(req, to)
        : { url, params }
@@ -36,18 +38,19 @@ const resolve = root => (req, from) => {
 
 const next = (req, url, params) => handlers => {
   var { first, last } = segment(url)
-    , li = keys(handlers)
-    , pm = li[0][0] == ':' ? li[0] : null
     , to = ''
 
-  if (pm) {
-    params[pm.slice(1)] = first
-    to = handlers[pm]({ req, next: next(req, last, params), params }) 
-  } else if (first in handlers)
-    to = handlers[first]({ req, next: next(req, last, params), params })
+  return first in handlers 
+       ? handlers[first]({ req, next: next(req, last, params), params, current: first })
+       : keys(handlers)
+          .filter(k => k[0] == ':')
+          .some(k => {
+            const pm = k.slice(1)
+            if (to = handlers[k]({ req, next: next(req, last, params), params, current: first }) )
+              params[pm] = first
 
-  // console.log(url, to, pm)
-  return to
+            return to
+          }) && to
 }
 
 function segment(url) {

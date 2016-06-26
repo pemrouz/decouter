@@ -15,19 +15,24 @@ const login = ({ req }) =>
 
 const dashboard = ({ req, next }) => 
     !whos(req).email ? '/login' 
-   : next({ classes, teachers, middle }) 
+   : next({ classes, teachers, middle, ':society': society }) 
   || `/dashboard/classes/${today}`
 
 const teachers = ({ next }) => 
-  next({ ':op': ({ params }) => params.op && params.op !== 'add' ? '/dashboard/teachers' : true })
+  next({ ':op': ({ current }) => current && current !== 'add' ? '/dashboard/teachers' : true })
 
 const classes = ({ next }) => 
-  next({ ':date': ({ params }) => !!params.date || `/dashboard/classes/${today}` })
+  next({ ':date': ({ current }) => !!current || `/dashboard/classes/${today}` })
 
 const middle = ({ next }) => next({ ':foo': foo })
 const foo    = ({ next }) => next({  'bar': bar })
 const bar    = ({ next }) => next({ ':baz': baz })
 const baz    = ({ next }) => true
+
+const society = ({ current, next }) =>
+  next({ ':event': event }) || is.str(current)
+
+const event = ({ current }) => current > 0
 
 t.test('pure resolution', t => {
   const { router, resolve } = require('./')
@@ -57,10 +62,10 @@ t.test('pure resolution', t => {
     { url: '/dashboard/classes/today', params: { date: 'today' } }
   )
 
-  t.same(resolve(app)(
-    { url: '/dashboard/baz', email: true }), 
-    { url: '/dashboard/classes/today', params: { date: 'today' } }
-  )
+  // t.same(resolve(app)(
+  //   { url: '/dashboard/baz', email: true }), 
+  //   { url: '/dashboard/classes/today', params: { date: 'today' } }
+  // )
 
   t.same(resolve(app)(
     { url: '/dashboard/classes', email: true }), 
@@ -92,6 +97,21 @@ t.test('pure resolution', t => {
     { url: '/dashboard/middle/foo/bar/baz', params: { foo: 'foo', baz: 'baz' }}
   )
 
+  t.same(resolve(app)(
+    { url: '/dashboard/middle/foo/bar/baz', email: true }), 
+    { url: '/dashboard/middle/foo/bar/baz', params: { foo: 'foo', baz: 'baz' }}
+  )
+
+  t.same(resolve(app)(
+    { url: '/dashboard/imperial', email: true }), 
+    { url: '/dashboard/imperial', params: { society: 'imperial' }}
+  )
+
+  t.same(resolve(app)(
+    { url: '/dashboard/imperial/50', email: true }), 
+    { url: '/dashboard/imperial/50', params: { society: 'imperial', event: '50' }}
+  )
+
   time(100, t.end)
 })
 
@@ -100,8 +120,8 @@ t.test('side effects - server', t => {
 
   var redirect = d => redirected = d
     , next = d => passed = true
-    , pass = req => req
-    , skip = req => ({ url: '/bar' })
+    , pass = ({ url }) => true
+    , skip = ({ url }) => url == '/bar' || '/bar'
     , redirected = false
     , passed = false
     , url = '/foo'
@@ -131,17 +151,17 @@ t.test('side effects - client', t => {
 
   const { router, resolve } = require('./')
 
-  var pass = req => req
-    , skip = req => ({ url: '/bar' })
+  var pass = ({ url }) => true
+    , skip = ({ url }) => url == '/bar' || '/bar'
   
   window.on('change', d => changed = true)
 
   pushed = changed = false
-  t.same(router(pass), { url: '/foo' })
+  t.same(router(pass), { url: '/foo', params: {} })
   t.notOk(changed)
 
   pushed = changed = false
-  t.same(router(skip), { url: '/bar' })
+  t.same(router(skip), { url: '/bar', params: {} })
   t.ok(changed)
   
   t.end()

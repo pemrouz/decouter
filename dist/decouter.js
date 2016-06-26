@@ -14,9 +14,17 @@ var _client = require('utilise/client');
 
 var _client2 = _interopRequireDefault(_client);
 
+var _parse = require('utilise/parse');
+
+var _parse2 = _interopRequireDefault(_parse);
+
 var _keys = require('utilise/keys');
 
 var _keys2 = _interopRequireDefault(_keys);
+
+var _str = require('utilise/str');
+
+var _str2 = _interopRequireDefault(_str);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -25,12 +33,12 @@ var go = function go(url) {
   return (window.event && window.event.preventDefault(), true), history.pushState({}, '', url), window.emit('change'), url;
 };
 
-var router = function router(resolve) {
+var router = function router(routes) {
   return !_client2.default ? route : route({ url: location.pathname });
 
   function route(req, res, next) {
     var from = req.url,
-        resolved = resolve(req),
+        resolved = resolve(routes)(req),
         to = resolved.url;
 
     if (from !== to) log('router redirecting', from, to);
@@ -43,7 +51,7 @@ var resolve = function resolve(root) {
   return function (req, from) {
     var params = {},
         url = from || req.url,
-        to = root({ req: req, params: params, next: next(req, url, params) });
+        to = root({ url: url, req: req, params: params, next: next(req, url, params) });
 
     return to !== true ? resolve(root)(req, to) : { url: url, params: params };
   };
@@ -55,17 +63,16 @@ var next = function next(req, url, params) {
 
     var first = _segment.first;
     var last = _segment.last;
-    var li = (0, _keys2.default)(handlers);
-    var pm = li[0][0] == ':' ? li[0] : null;
     var to = '';
 
-    if (pm) {
-      params[pm.slice(1)] = first;
-      to = handlers[pm]({ req: req, next: next(req, last, params), params: params });
-    } else if (first in handlers) to = handlers[first]({ req: req, next: next(req, last, params), params: params });
+    return first in handlers ? handlers[first]({ req: req, next: next(req, last, params), params: params, current: first }) : (0, _keys2.default)(handlers).filter(function (k) {
+      return k[0] == ':';
+    }).some(function (k) {
+      var pm = k.slice(1);
+      if (to = handlers[k]({ req: req, next: next(req, last, params), params: params, current: first })) params[pm] = first;
 
-    // console.log(url, to, pm)
-    return to;
+      return to;
+    }) && to;
   };
 };
 
@@ -84,7 +91,7 @@ if (_client2.default) {
 
 exports.router = router;
 exports.resolve = resolve;
-},{"utilise/client":2,"utilise/emitterify":4,"utilise/keys":8,"utilise/log":9}],2:[function(require,module,exports){
+},{"utilise/client":2,"utilise/emitterify":4,"utilise/keys":8,"utilise/log":9,"utilise/parse":12,"utilise/str":13}],2:[function(require,module,exports){
 module.exports = typeof window != 'undefined'
 },{}],3:[function(require,module,exports){
 var has = require('utilise/has')
@@ -161,7 +168,7 @@ module.exports = function err(prefix){
     return console.error.apply(console, args), d
   }
 }
-},{"utilise/owner":11,"utilise/to":12}],6:[function(require,module,exports){
+},{"utilise/owner":11,"utilise/to":14}],6:[function(require,module,exports){
 module.exports = function has(o, k) {
   return k in o
 }
@@ -256,7 +263,7 @@ module.exports = function log(prefix){
     return console.log.apply(console, args), d
   }
 }
-},{"utilise/is":7,"utilise/owner":11,"utilise/to":12}],10:[function(require,module,exports){
+},{"utilise/is":7,"utilise/owner":11,"utilise/to":14}],10:[function(require,module,exports){
 module.exports = function not(fn){
   return function(){
     return !fn.apply(this, arguments)
@@ -267,6 +274,20 @@ module.exports = function not(fn){
 module.exports = require('utilise/client') ? /* istanbul ignore next */ window : global
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 },{"utilise/client":2}],12:[function(require,module,exports){
+module.exports = function parse(d){
+  return d && JSON.parse(d)
+}
+},{}],13:[function(require,module,exports){
+var is = require('utilise/is') 
+
+module.exports = function str(d){
+  return d === 0 ? '0'
+       : !d ? ''
+       : is.fn(d) ? '' + d
+       : is.obj(d) ? JSON.stringify(d)
+       : String(d)
+}
+},{"utilise/is":7}],14:[function(require,module,exports){
 module.exports = { 
   arr: toArray
 , obj: toObject
