@@ -16,9 +16,8 @@
     "babel": "babel src -d dist",
     "clean": "rm -rf dist && mkdir dist",
     "build": "npm run clean && npm run babel && npm run bundle && npm run ignore:build",
-    "test": " babel src/test.js > dist/test.js && tap dist/test.js && rm dist/test.js",
-    "coverage": "babel src/test.js > dist/test.js && tap dist/test.js --cov --coverage-report=lcov && rm -rf ./coverage && rm dist/test.js",
-    "cov": "babel src/test.js > dist/test.js && tap dist/test.js --cov --coverage-report=lcov",
+    "test": "tap dist/test.js",
+    "coverage": "tap dist/test.js --cov --coverage-report=lcov",
     "version": "npm run build && git add -A",
     "postversion": "git push && git push --tags"
   },
