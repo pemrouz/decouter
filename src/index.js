@@ -19,6 +19,7 @@ const router = routes => {
         , to = resolved.url
 
     if (from !== to) log('router redirecting', from, to)
+    if (client) location.params = resolved.params
 
     return client && from !== to ? (go(to), resolved)
         : !client && from !== to ? res.redirect(to)

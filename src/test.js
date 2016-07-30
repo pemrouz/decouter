@@ -139,7 +139,7 @@ t.test('side effects - server', t => {
 })
 
 t.test('side effects - client', t => {
-  var pushState = (state, title, url) => pushed = [state, title, url]
+  var pushState = (state, title, url) => (pushed = [state, title, url], location.pathname = url)
     , pushed, changed
   
   keys(require.cache).map(d => delete require.cache[d])
@@ -151,17 +151,25 @@ t.test('side effects - client', t => {
 
   const { router, resolve } = require('./')
 
-  var pass = ({ url }) => true
-    , skip = ({ url }) => url == '/bar' || '/bar'
+  var pass = ({ url  }) => true
+    , skip = ({ url  }) => url == '/bar' || '/bar'
+    , args = ({ next }) => next({ foo: ({ next }) => next({ ':bar': d => true }) }) || '/foo/baz'
   
   window.on('change', d => changed = true)
 
   pushed = changed = false
   t.same(router(pass), { url: '/foo', params: {} })
+  t.same(location, { pathname: '/foo', params: {} })
   t.notOk(changed)
 
   pushed = changed = false
   t.same(router(skip), { url: '/bar', params: {} })
+  t.same(location, { pathname: '/bar', params: {} })
+  t.ok(changed)
+
+  pushed = changed = false
+  t.same(router(args), { url: '/foo/baz', params: { bar: 'baz' } })
+  t.same(location, { pathname: '/foo/baz', params: { bar: 'baz' } })
   t.ok(changed)
   
   t.end()
