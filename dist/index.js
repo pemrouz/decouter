@@ -42,6 +42,7 @@ var router = function router(routes) {
         to = resolved.url;
 
     if (from !== to) log('router redirecting', from, to);
+    if (_client2.default) location.params = resolved.params;
 
     return _client2.default && from !== to ? (go(to), resolved) : !_client2.default && from !== to ? res.redirect(to) : !_client2.default ? next() : resolved;
   }
