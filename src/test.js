@@ -142,9 +142,11 @@ t.test('side effects - client', t => {
   var pushState = (state, title, url) => (pushed = [state, title, url], location.pathname = url)
     , pushed, changed
   
+  delete global.window
+  delete global.document
   keys(require.cache).map(d => delete require.cache[d])
   require('browserenv')
-  global.window = { addEventListener: noop }
+  global.CustomEvent = global.window.CustomEvent
   global.location = { pathname: '/foo' }
   global.history = { pushState }
   keys(require.cache).map(d => delete require.cache[d])
@@ -155,7 +157,7 @@ t.test('side effects - client', t => {
     , skip = ({ url  }) => url == '/bar' || '/bar'
     , args = ({ next }) => next({ foo: ({ next }) => next({ ':bar': d => true }) }) || '/foo/baz'
   
-  window.on('change', d => changed = true)
+  window.addEventListener('change', e => changed = true)
 
   pushed = changed = false
   t.same(router(pass), { url: '/foo', params: {} })
@@ -179,17 +181,19 @@ t.test('should allow manual navigations', t => {
   const pushState = (state, title, url) => pushed = [state, title, url]
   var pushed, prevented, changed
 
+  delete global.window
+  delete global.document
   keys(require.cache).map(d => delete require.cache[d])
   require('browserenv')
-  global.window.addEventListener = noop 
   global.window.event = { preventDefault: d => prevented = true }
+  global.CustomEvent = global.window.CustomEvent
   global.location = { }
   global.history = { pushState }
   keys(require.cache).map(d => delete require.cache[d])
 
   const { router, resolve } = require('./')
 
-  window.on('change', d => changed = true)
+  window.addEventListener('change', e => changed = true)
   const go = window.go
 
   t.same(go('/path'), '/path')
@@ -200,17 +204,19 @@ t.test('should allow manual navigations', t => {
 })
 
 t.test('should trigger change on popstate', t => {
-  var listeners = [], changed = false
-  const addEventListener = (type, fn) => listeners.push(fn)
+  var changed = false
   
+  delete global.window
+  delete global.document
   keys(require.cache).map(d => delete require.cache[d])
   require('browserenv')
-  global.window = { addEventListener }
+  global.CustomEvent = global.window.CustomEvent
   keys(require.cache).map(d => delete require.cache[d])
-  const { router, resolve } = require('./')
   
-  window.on('change', d => changed = true)
-  listeners.map(d => d())
+  const { router, resolve } = require('./')
+  window.addEventListener('change', e => changed = true)
+  window.dispatchEvent(new CustomEvent('popstate'))
+
   t.ok(changed)
   t.end()
 })

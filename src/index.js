@@ -57,9 +57,17 @@ function segment(url) {
 }
 
 if (client) {
-  emitterify(window).addEventListener('popstate', d => window.emit('change'))
   window.go = go
   window.router = router
+  window.addEventListener('popstate', e => window.dispatchEvent(new CustomEvent('change')))
+  window.addEventListener('change', e => e.target == window && (app || document).draw && (app || document).draw())
+  document.addEventListener('click', e => {
+    const a = e.path ? e.path.shift() : e.target
+    if (!a.matches('a[href]:not([href^=javascript]):not(.bypass)')) return
+    if (a.origin != location.origin) return
+    e.preventDefault()
+    go(a.href)
+  })
 }
 
 export { router, resolve }
