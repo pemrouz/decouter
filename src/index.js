@@ -1,13 +1,10 @@
-import emitterify from 'utilise/emitterify'
 import client from 'utilise/client'
-import parse from 'utilise/parse'
 import keys from 'utilise/keys'
-import str from 'utilise/str'
 
 const log = require('utilise/log')('[router]')
 const go  = url => ((window.event && window.event.preventDefault(), true)
                    , history.pushState({}, '', url)
-                   , window.emit('change')
+                   , window.dispatchEvent(new CustomEvent('change'))
                    , url)
 
 const router = routes => {
