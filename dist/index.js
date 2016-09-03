@@ -5,32 +5,20 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.resolve = exports.router = undefined;
 
-var _emitterify = require('utilise/emitterify');
-
-var _emitterify2 = _interopRequireDefault(_emitterify);
-
 var _client = require('utilise/client');
 
 var _client2 = _interopRequireDefault(_client);
 
-var _parse = require('utilise/parse');
-
-var _parse2 = _interopRequireDefault(_parse);
-
 var _keys = require('utilise/keys');
 
 var _keys2 = _interopRequireDefault(_keys);
-
-var _str = require('utilise/str');
-
-var _str2 = _interopRequireDefault(_str);
 
 /* istanbul ignore next */
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var log = require('utilise/log')('[router]');
 var go = function go(url) {
-  return (window.event && window.event.preventDefault(), true), history.pushState({}, '', url), window.emit('change'), url;
+  return (window.event && window.event.preventDefault(), true), history.pushState({}, '', url), window.dispatchEvent(new CustomEvent('change')), url;
 };
 
 var router = function router(routes) {
@@ -83,11 +71,21 @@ function segment(url) {
 }
 
 if (_client2.default) {
-  (0, _emitterify2.default)(window).addEventListener('popstate', function (d) {
-    return window.emit('change');
-  });
   window.go = go;
   window.router = router;
+  window.addEventListener('popstate', function (e) {
+    return window.dispatchEvent(new CustomEvent('change'));
+  });
+  window.addEventListener('change', function (e) {
+    return e.target == window && (app || document).draw && (app || document).draw();
+  });
+  document.addEventListener('click', function (e) {
+    var a = e.path ? e.path.shift() : e.target;
+    if (!a.matches('a[href]:not([href^=javascript]):not(.bypass)')) return;
+    if (a.origin != location.origin) return;
+    e.preventDefault();
+    go(a.href);
+  });
 }
 
 exports.router = router;

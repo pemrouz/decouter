@@ -167,11 +167,13 @@ _tap2.default.test('side effects - client', function (t) {
       pushed,
       changed;
 
+  delete global.window;
+  delete global.document;
   keys(require.cache).map(function (d) {
     return delete require.cache[d];
   });
   require('browserenv');
-  global.window = { addEventListener: noop };
+  global.CustomEvent = global.window.CustomEvent;
   global.location = { pathname: '/foo' };
   global.history = { pushState: pushState };
   keys(require.cache).map(function (d) {
@@ -201,7 +203,7 @@ _tap2.default.test('side effects - client', function (t) {
       } }) || '/foo/baz';
   };
 
-  window.on('change', function (d) {
+  window.addEventListener('change', function (e) {
     return changed = true;
   });
 
@@ -229,14 +231,16 @@ _tap2.default.test('should allow manual navigations', function (t) {
   };
   var pushed, prevented, changed;
 
+  delete global.window;
+  delete global.document;
   keys(require.cache).map(function (d) {
     return delete require.cache[d];
   });
   require('browserenv');
-  global.window.addEventListener = noop;
   global.window.event = { preventDefault: function preventDefault(d) {
       return prevented = true;
     } };
+  global.CustomEvent = global.window.CustomEvent;
   global.location = {};
   global.history = { pushState: pushState };
   keys(require.cache).map(function (d) {
@@ -248,7 +252,7 @@ _tap2.default.test('should allow manual navigations', function (t) {
   var router = _require4.router;
   var resolve = _require4.resolve;
 
-  window.on('change', function (d) {
+  window.addEventListener('change', function (e) {
     return changed = true;
   });
   var go = window.go;
@@ -261,17 +265,15 @@ _tap2.default.test('should allow manual navigations', function (t) {
 });
 
 _tap2.default.test('should trigger change on popstate', function (t) {
-  var listeners = [],
-      changed = false;
-  var addEventListener = function addEventListener(type, fn) {
-    return listeners.push(fn);
-  };
+  var changed = false;
 
+  delete global.window;
+  delete global.document;
   keys(require.cache).map(function (d) {
     return delete require.cache[d];
   });
   require('browserenv');
-  global.window = { addEventListener: addEventListener };
+  global.CustomEvent = global.window.CustomEvent;
   keys(require.cache).map(function (d) {
     return delete require.cache[d];
   });
@@ -281,12 +283,17 @@ _tap2.default.test('should trigger change on popstate', function (t) {
   var router = _require5.router;
   var resolve = _require5.resolve;
 
-  window.on('change', function (d) {
+  window.addEventListener('change', function (e) {
+    return console.log('***************');
+  });
+  window.addEventListener('popstate', function (e) {
+    return console.log('=========================');
+  });
+  window.addEventListener('change', function (e) {
     return changed = true;
   });
-  listeners.map(function (d) {
-    return d();
-  });
+  window.dispatchEvent(new CustomEvent('popstate'));
+
   t.ok(changed);
   t.end();
 });
