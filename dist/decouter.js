@@ -71,21 +71,24 @@ function segment(url) {
 }
 
 if (_client2.default) {
-  window.go = go;
-  window.router = router;
-  window.addEventListener('popstate', function (e) {
-    return window.dispatchEvent(new CustomEvent('change'));
-  });
-  window.addEventListener('change', function (e) {
-    return e.target == window && (app || document).draw && (app || document).draw();
-  });
-  document.addEventListener('click', function (e) {
-    var a = e.path ? e.path.shift() : e.target;
-    if (!a.matches('a[href]:not([href^=javascript]):not(.bypass)')) return;
-    if (a.origin != location.origin) return;
-    e.preventDefault();
-    go(a.href);
-  });
+  (function () {
+    var draw = window.app && window.app.draw || document.draw || String;
+    window.go = go;
+    window.router = router;
+    window.addEventListener('popstate', function (e) {
+      return window.dispatchEvent(new CustomEvent('change'));
+    });
+    window.addEventListener('change', function (e) {
+      return e.target == window && draw();
+    });
+    document.addEventListener('click', function (e) {
+      var a = e.path ? e.path.shift() : e.target;
+      if (!a.matches('a[href]:not([href^=javascript]):not(.bypass)')) return;
+      if (a.origin != location.origin) return;
+      e.preventDefault();
+      go(a.href);
+    });
+  })();
 }
 
 exports.router = router;

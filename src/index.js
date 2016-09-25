@@ -57,10 +57,11 @@ function segment(url) {
 }
 
 if (client) {
+  const draw = window.app && window.app.draw || document.draw || String
   window.go = go
   window.router = router
   window.addEventListener('popstate', e => window.dispatchEvent(new CustomEvent('change')))
-  window.addEventListener('change', e => e.target == window && (app || document).draw && (app || document).draw())
+  window.addEventListener('change', e => e.target == window && draw())
   document.addEventListener('click', e => {
     const a = e.path ? e.path.shift() : e.target
     if (!a.matches('a[href]:not([href^=javascript]):not(.bypass)')) return

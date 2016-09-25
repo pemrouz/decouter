@@ -284,12 +284,6 @@ _tap2.default.test('should trigger change on popstate', function (t) {
   var resolve = _require5.resolve;
 
   window.addEventListener('change', function (e) {
-    return console.log('***************');
-  });
-  window.addEventListener('popstate', function (e) {
-    return console.log('=========================');
-  });
-  window.addEventListener('change', function (e) {
     return changed = true;
   });
   window.dispatchEvent(new CustomEvent('popstate'));
