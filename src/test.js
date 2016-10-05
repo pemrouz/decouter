@@ -8,7 +8,7 @@ const today = 'today'
 const whos = req => req
 
 const app = ({ next }) => 
-  next({ dashboard, login }) ||  '/login'
+  next({ dashboard, login, relative }) ||  '/login'
 
 const login = ({ req }) => 
   whos(req).email ? '/dashboard' : true
@@ -17,6 +17,12 @@ const dashboard = ({ req, next }) =>
     !whos(req).email ? '/login' 
    : next({ classes, teachers, middle, ':society': society }) 
   || `/dashboard/classes/${today}`
+
+const relative = ({ next }) => next({ redirect1, redirect2 }) || true
+
+const redirect1 = ({ }) => '../'
+
+const redirect2 = ({ }) => '..'
 
 const teachers = ({ next }) => 
   next({ ':op': ({ current }) => current && current !== 'add' ? '/dashboard/teachers' : true })
@@ -110,6 +116,16 @@ t.test('pure resolution', t => {
   t.same(resolve(app)(
     { url: '/dashboard/imperial/50', email: true }), 
     { url: '/dashboard/imperial/50', params: { society: 'imperial', event: '50' }}
+  )
+
+  t.same(resolve(app)(
+    { url: '/relative/redirect1' }), 
+    { url: '/relative', params: {} }
+  )
+
+  t.same(resolve(app)(
+    { url: '/relative/redirect2' }), 
+    { url: '/relative', params: {} }
   )
 
   time(100, t.end)

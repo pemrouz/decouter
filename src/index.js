@@ -30,7 +30,8 @@ const resolve = root => (req, from) => {
       , url = from || req.url
       , to = root({ url, req, params, next: next(req, url, params) })
 
-  return to !== true ? resolve(root)(req, to)
+  return to == '../' || to == '..' ? resolve(root)(req, '/' + url.split('/').filter(Boolean).slice(0, -1).join('/'))
+       : to !== true ? resolve(root)(req, to)
        : { url, params }
 }
 
