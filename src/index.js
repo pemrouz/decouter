@@ -53,7 +53,7 @@ const next = (req, url, params) => handlers => {
 
 function segment(url) {
   const segments = url.split('/').filter(Boolean)
-  return { first: segments.shift(), last: segments.join('/') }
+  return { first: segments.shift(), last: '/' + segments.join('/') }
 }
 
 if (client) {
