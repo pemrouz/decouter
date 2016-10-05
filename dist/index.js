@@ -42,7 +42,7 @@ var resolve = function resolve(root) {
         url = from || req.url,
         to = root({ url: url, req: req, params: params, next: next(req, url, params) });
 
-    return to !== true ? resolve(root)(req, to) : { url: url, params: params };
+    return to == '../' || to == '..' ? resolve(root)(req, '/' + url.split('/').filter(Boolean).slice(0, -1).join('/')) : to !== true ? resolve(root)(req, to) : { url: url, params: params };
   };
 };
 
@@ -67,7 +67,7 @@ var next = function next(req, url, params) {
 
 function segment(url) {
   var segments = url.split('/').filter(Boolean);
-  return { first: segments.shift(), last: segments.join('/') };
+  return { first: segments.shift(), last: '/' + segments.join('/') };
 }
 
 if (_client2.default) {

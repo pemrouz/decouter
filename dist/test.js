@@ -16,6 +16,8 @@ var _tap2 = _interopRequireDefault(_tap);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+function _objectDestructuringEmpty(obj) { if (obj == null) throw new TypeError("Cannot destructure undefined"); }
+
 var today = 'today';
 
 var whos = function whos(req) {
@@ -24,7 +26,7 @@ var whos = function whos(req) {
 
 var app = function app(_ref) {
   var next = _ref.next;
-  return next({ dashboard: dashboard, login: login }) || '/login';
+  return next({ dashboard: dashboard, login: login, relative: relative }) || '/login';
 };
 
 var login = function login(_ref2) {
@@ -38,47 +40,64 @@ var dashboard = function dashboard(_ref3) {
   return !whos(req).email ? '/login' : next({ classes: classes, teachers: teachers, middle: middle, ':society': society }) || '/dashboard/classes/' + today;
 };
 
-var teachers = function teachers(_ref4) {
+var relative = function relative(_ref4) {
   var next = _ref4.next;
-  return next({ ':op': function op(_ref5) {
-      var current = _ref5.current;
+  return next({ redirect1: redirect1, redirect2: redirect2 }) || true;
+};
+
+var redirect1 = function redirect1(_ref5) {
+  _objectDestructuringEmpty(_ref5);
+
+  return '../';
+};
+
+var redirect2 = function redirect2(_ref6) {
+  _objectDestructuringEmpty(_ref6);
+
+  return '..';
+};
+
+var teachers = function teachers(_ref7) {
+  var next = _ref7.next;
+  return next({ ':op': function op(_ref8) {
+      var current = _ref8.current;
       return current && current !== 'add' ? '/dashboard/teachers' : true;
     } });
 };
 
-var classes = function classes(_ref6) {
-  var next = _ref6.next;
-  return next({ ':date': function date(_ref7) {
-      var current = _ref7.current;
+var classes = function classes(_ref9) {
+  var next = _ref9.next;
+  return next({ ':date': function date(_ref10) {
+      var current = _ref10.current;
       return !!current || '/dashboard/classes/' + today;
     } });
 };
 
-var middle = function middle(_ref8) {
-  var next = _ref8.next;
+var middle = function middle(_ref11) {
+  var next = _ref11.next;
   return next({ ':foo': foo });
 };
-var foo = function foo(_ref9) {
-  var next = _ref9.next;
+var foo = function foo(_ref12) {
+  var next = _ref12.next;
   return next({ 'bar': bar });
 };
-var bar = function bar(_ref10) {
-  var next = _ref10.next;
+var bar = function bar(_ref13) {
+  var next = _ref13.next;
   return next({ ':baz': baz });
 };
-var baz = function baz(_ref11) {
-  var next = _ref11.next;
+var baz = function baz(_ref14) {
+  var next = _ref14.next;
   return true;
 };
 
-var society = function society(_ref12) {
-  var current = _ref12.current;
-  var next = _ref12.next;
+var society = function society(_ref15) {
+  var current = _ref15.current;
+  var next = _ref15.next;
   return next({ ':event': event }) || is.str(current);
 };
 
-var event = function event(_ref13) {
-  var current = _ref13.current;
+var event = function event(_ref16) {
+  var current = _ref16.current;
   return current > 0;
 };
 
@@ -121,6 +140,10 @@ _tap2.default.test('pure resolution', function (t) {
 
   t.same(resolve(app)({ url: '/dashboard/imperial/50', email: true }), { url: '/dashboard/imperial/50', params: { society: 'imperial', event: '50' } });
 
+  t.same(resolve(app)({ url: '/relative/redirect1' }), { url: '/relative', params: {} });
+
+  t.same(resolve(app)({ url: '/relative/redirect2' }), { url: '/relative', params: {} });
+
   time(100, t.end);
 });
 
@@ -136,12 +159,12 @@ _tap2.default.test('side effects - server', function (t) {
       next = function next(d) {
     return passed = true;
   },
-      pass = function pass(_ref14) {
-    var url = _ref14.url;
+      pass = function pass(_ref17) {
+    var url = _ref17.url;
     return true;
   },
-      skip = function skip(_ref15) {
-    var url = _ref15.url;
+      skip = function skip(_ref18) {
+    var url = _ref18.url;
     return url == '/bar' || '/bar';
   },
       redirected = false,
@@ -185,18 +208,18 @@ _tap2.default.test('side effects - client', function (t) {
   var router = _require3.router;
   var resolve = _require3.resolve;
 
-  var pass = function pass(_ref16) {
-    var url = _ref16.url;
+  var pass = function pass(_ref19) {
+    var url = _ref19.url;
     return true;
   },
-      skip = function skip(_ref17) {
-    var url = _ref17.url;
+      skip = function skip(_ref20) {
+    var url = _ref20.url;
     return url == '/bar' || '/bar';
   },
-      args = function args(_ref18) {
-    var next = _ref18.next;
-    return next({ foo: function foo(_ref19) {
-        var next = _ref19.next;
+      args = function args(_ref21) {
+    var next = _ref21.next;
+    return next({ foo: function foo(_ref22) {
+        var next = _ref22.next;
         return next({ ':bar': function bar(d) {
             return true;
           } });
