@@ -54,10 +54,11 @@ var next = function next(req, url, params) {
     var last = _segment.last;
     var to = '';
 
-    return first in handlers ? handlers[first]({ req: req, next: next(req, last, params), params: params, current: first }) : (0, _keys2.default)(handlers).filter(function (k) {
+    return !first ? false : first in handlers ? handlers[first]({ req: req, next: next(req, last, params), params: params, current: first }) : (0, _keys2.default)(handlers).filter(function (k) {
       return k[0] == ':';
     }).some(function (k) {
       var pm = k.slice(1);
+      // TODO === true
       if (to = handlers[k]({ req: req, next: next(req, last, params), params: params, current: first })) params[pm] = first;
 
       return to;
@@ -75,6 +76,7 @@ if (_client2.default) {
     var draw = window.app && window.app.draw || document.draw || String;
     window.go = go;
     window.router = router;
+    window.router.resolve = resolve;
     window.addEventListener('popstate', function (e) {
       return window.dispatchEvent(new CustomEvent('change'));
     });

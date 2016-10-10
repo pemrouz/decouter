@@ -26,7 +26,7 @@ var whos = function whos(req) {
 
 var app = function app(_ref) {
   var next = _ref.next;
-  return next({ dashboard: dashboard, login: login, relative: relative }) || '/login';
+  return next({ dashboard: dashboard, login: login, relative: relative, redirect1: redirect1 }) || '/login';
 };
 
 var login = function login(_ref2) {
@@ -42,7 +42,7 @@ var dashboard = function dashboard(_ref3) {
 
 var relative = function relative(_ref4) {
   var next = _ref4.next;
-  return next({ redirect1: redirect1, redirect2: redirect2 }) || true;
+  return next({ redirect1: redirect1, redirect2: redirect2, ':param': param }) || true;
 };
 
 var redirect1 = function redirect1(_ref5) {
@@ -57,12 +57,16 @@ var redirect2 = function redirect2(_ref6) {
   return '..';
 };
 
+var param = function param() {
+  return 'error';
+};
+
 var teachers = function teachers(_ref7) {
   var next = _ref7.next;
   return next({ ':op': function op(_ref8) {
       var current = _ref8.current;
-      return current && current !== 'add' ? '/dashboard/teachers' : true;
-    } });
+      return current !== 'add' ? '/dashboard/teachers' : true;
+    } }) || true;
 };
 
 var classes = function classes(_ref9) {
@@ -126,9 +130,9 @@ _tap2.default.test('pure resolution', function (t) {
 
   t.same(resolve(app)({ url: '/dashboard/classes/tom', email: true }), { url: '/dashboard/classes/tom', params: { date: 'tom' } });
 
-  t.same(resolve(app)({ url: '/dashboard/teachers', email: true }), { url: '/dashboard/teachers', params: { op: undefined } });
+  t.same(resolve(app)({ url: '/dashboard/teachers', email: true }), { url: '/dashboard/teachers', params: {} });
 
-  t.same(resolve(app)({ url: '/dashboard/teachers/foo', email: true }), { url: '/dashboard/teachers', params: { op: undefined } });
+  t.same(resolve(app)({ url: '/dashboard/teachers/foo', email: true }), { url: '/dashboard/teachers', params: {} });
 
   t.same(resolve(app)({ url: '/dashboard/teachers/add', email: true }), { url: '/dashboard/teachers/add', params: { op: 'add' } });
 
