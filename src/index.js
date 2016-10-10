@@ -39,12 +39,13 @@ const next = (req, url, params) => handlers => {
   var { first, last } = segment(url)
     , to = ''
 
-  return first in handlers 
-       ? handlers[first]({ req, next: next(req, last, params), params, current: first })
+  return !first ? false 
+       : first in handlers ? handlers[first]({ req, next: next(req, last, params), params, current: first })
        : keys(handlers)
           .filter(k => k[0] == ':')
           .some(k => {
             const pm = k.slice(1)
+            // TODO === true
             if (to = handlers[k]({ req, next: next(req, last, params), params, current: first }) )
               params[pm] = first
 
@@ -61,6 +62,7 @@ if (client) {
   const draw = window.app && window.app.draw || document.draw || String
   window.go = go
   window.router = router
+  window.router.resolve = resolve
   window.addEventListener('popstate', e => window.dispatchEvent(new CustomEvent('change')))
   window.addEventListener('change', e => e.target == window && draw())
   document.addEventListener('click', e => {

@@ -8,7 +8,7 @@ const today = 'today'
 const whos = req => req
 
 const app = ({ next }) => 
-  next({ dashboard, login, relative }) ||  '/login'
+  next({ dashboard, login, relative, redirect1 }) ||  '/login'
 
 const login = ({ req }) => 
   whos(req).email ? '/dashboard' : true
@@ -18,14 +18,16 @@ const dashboard = ({ req, next }) =>
    : next({ classes, teachers, middle, ':society': society }) 
   || `/dashboard/classes/${today}`
 
-const relative = ({ next }) => next({ redirect1, redirect2 }) || true
+const relative = ({ next }) => next({ redirect1, redirect2, ':param': param }) || true
 
 const redirect1 = ({ }) => '../'
 
 const redirect2 = ({ }) => '..'
 
+const param = () => 'error'
+
 const teachers = ({ next }) => 
-  next({ ':op': ({ current }) => current && current !== 'add' ? '/dashboard/teachers' : true })
+  next({ ':op': ({ current }) => current !== 'add' ? '/dashboard/teachers' : true }) || true
 
 const classes = ({ next }) => 
   next({ ':date': ({ current }) => !!current || `/dashboard/classes/${today}` })
@@ -85,12 +87,12 @@ t.test('pure resolution', t => {
 
   t.same(resolve(app)
     ({ url: '/dashboard/teachers', email: true }), 
-    { url: '/dashboard/teachers', params: { op: undefined }}
+    { url: '/dashboard/teachers', params: {}}
   )
 
   t.same(resolve(app)(
     { url: '/dashboard/teachers/foo', email: true }), 
-    { url: '/dashboard/teachers', params: { op: undefined }}
+    { url: '/dashboard/teachers', params: {}}
   )
 
   t.same(resolve(app)(
