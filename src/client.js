@@ -1,6 +1,16 @@
-import { key, keys, is, client } from 'utilise/pure'
+const client = true
 
-const log = require('utilise/log')('[router]')
+function l(ns){
+  return function(d){
+    if (!window.console || !console.log.apply) return d;
+    var args = Array.prototype.slice.call(arguments, 0)
+      , prefix = '[log][' + (new Date()).toISOString() + ']' + ns
+    args.unshift(prefix)
+    return console.log.apply(console, args), d
+  }
+}
+
+const log = l('[router]')
     , go  = url => {
         if (window.event) window.event.preventDefault()
         history.pushState({}, '', url)
@@ -39,22 +49,20 @@ const resolve = routes => (req, url = req.url) => {
 const next = (req, params = {}, url, value, variable) => {
   const { cur, remainder } = segment(url)
 
-  return is.str(value) || is.bol(value) ? value
-       : is.fn(value) && !is.def(variable) ? next(req, params, url, value(req))
-       : is.fn(value) ? next(req, params, url, value(variable, req))
+  return typeof value == 'string' || typeof value == 'boolean' ? value
+       : typeof value == 'function' && typeof variable != 'undefined' ? next(req, params, url, value(req))
+       : typeof value == 'function' ? next(req, params, url, value(variable, req))
        : cur in value ? next(req, params, remainder, value[cur])
        : !cur && value[':'] ? next(req, params, remainder, value[':'])
-       : key('value')(
-          variables(value)
+       : (variables(value)
             .find(d => (((d.value = next(req, params, remainder, value[d.key], cur || false)))
               ? (d.value === true && d.name && (params[d.name] = cur), true) 
               : false
               )
-            )
-         )
+            ) || {}).value
 }
 
-const variables = routes => keys(routes)
+const variables = o => Object.keys(typeof o == 'object' || typeof o == 'function' ? o : {})
   .filter(([f]) => f == ':')
   .map(k => ({ key: k, name: k.slice(1) }))
 
