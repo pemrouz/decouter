@@ -1,161 +1,113 @@
 'use strict';
 
-require('utilise');
-
-var _rijs = require('rijs.core');
-
-var _rijs2 = _interopRequireDefault(_rijs);
-
-var _rijs3 = require('rijs.data');
-
-var _rijs4 = _interopRequireDefault(_rijs3);
-
 var _tap = require('tap');
 
-var _tap2 = _interopRequireDefault(_tap);
+var _pure = require('utilise/pure');
 
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+var _2 = require('./');
 
-function _objectDestructuringEmpty(obj) { if (obj == null) throw new TypeError("Cannot destructure undefined"); }
+(0, _tap.test)('pure resolution', function (_ref) {
+  var same = _ref.same;
+  var end = _ref.end;
 
-var today = 'today';
+  same((0, _2.resolve)(function (req) {
+    return { foo: true };
+  })({ url: '/foo' }), { url: '/foo', params: {} }, 'top-level fn');
 
-var whos = function whos(req) {
-  return req;
-};
+  same((0, _2.resolve)(true)({ url: '/always-true' }), { url: '/always-true', params: {} }, 'always true');
 
-var app = function app(_ref) {
-  var next = _ref.next;
-  return next({ dashboard: dashboard, login: login, relative: relative, redirect1: redirect1 }) || '/login';
-};
+  same((0, _2.resolve)({ foo: true })({ url: '/foo' }), { url: '/foo', params: {} }, 'fixed path');
 
-var login = function login(_ref2) {
-  var req = _ref2.req;
-  return whos(req).email ? '/dashboard' : true;
-};
+  same((0, _2.resolve)({ foo: true })({ url: '/not-foo' }), false, 'fixed path unmatched');
 
-var dashboard = function dashboard(_ref3) {
-  var req = _ref3.req;
-  var next = _ref3.next;
-  return !whos(req).email ? '/login' : next({ classes: classes, teachers: teachers, middle: middle, ':society': society }) || '/dashboard/classes/' + today;
-};
+  same((0, _2.resolve)({ ':foo': true })({ url: '/var-foo' }), { url: '/var-foo', params: { foo: 'var-foo' } }, 'variable path - always true');
 
-var relative = function relative(_ref4) {
-  var next = _ref4.next;
-  return next({ redirect1: redirect1, redirect2: redirect2, ':param': param }) || true;
-};
+  same((0, _2.resolve)({ foo: { bar: true } })({ url: '/foo/bar' }), { url: '/foo/bar', params: {} }, 'two-level - always true');
 
-var redirect1 = function redirect1(_ref5) {
-  _objectDestructuringEmpty(_ref5);
+  same((0, _2.resolve)({ foo: { bar: '/baz/boo' }, baz: { boo: true } })({ url: '/foo/bar' }), { url: '/baz/boo', params: {} }, 'two-level - redirect');
 
-  return '../';
-};
+  same((0, _2.resolve)({ foo: { ':bar': true } })({ url: '/foo/bar' }), { url: '/foo/bar', params: { bar: 'bar' } }, 'two-level - variable');
 
-var redirect2 = function redirect2(_ref6) {
-  _objectDestructuringEmpty(_ref6);
+  same((0, _2.resolve)({ ':soc': function soc(_soc) {
+      return { ':eve': function eve(_eve) {
+          return true;
+        } };
+    } })({ url: '/soc/eve' }), { url: '/soc/eve', params: { soc: 'soc', eve: 'eve' } }, 'two-level variables');
 
-  return '..';
-};
+  same((0, _2.resolve)({ foo: { ':bar': { baz: true } } })({ url: '/foo/bar/baz' }), { url: '/foo/bar/baz', params: { bar: 'bar' } }, 'three-level - intermediate variable');
 
-var param = function param() {
-  return 'error';
-};
+  same((0, _2.resolve)({ foo: { ':bar': false, ':baz': true } })({ url: '/foo/boo' }), { url: '/foo/boo', params: { baz: 'boo' } }, 'multi-variable');
 
-var teachers = function teachers(_ref7) {
-  var next = _ref7.next;
-  return next({ ':op': function op(_ref8) {
-      var current = _ref8.current;
-      return current !== 'add' ? '/dashboard/teachers' : true;
-    } }) || true;
-};
+  same((0, _2.resolve)({ ':': '/login', 'login': true })({ url: '/default' }), { url: '/login', params: {} }, 'default - string');
 
-var classes = function classes(_ref9) {
-  var next = _ref9.next;
-  return next({ ':date': function date(_ref10) {
-      var current = _ref10.current;
-      return !!current || '/dashboard/classes/' + today;
-    } });
-};
+  same((0, _2.resolve)({ ':': function _(d) {
+      return '/login';
+    }, 'login': true })({ url: '/default' }), { url: '/login', params: {} }, 'default - string - fn');
 
-var middle = function middle(_ref11) {
-  var next = _ref11.next;
-  return next({ ':foo': foo });
-};
-var foo = function foo(_ref12) {
-  var next = _ref12.next;
-  return next({ 'bar': bar });
-};
-var bar = function bar(_ref13) {
-  var next = _ref13.next;
-  return next({ ':baz': baz });
-};
-var baz = function baz(_ref14) {
-  var next = _ref14.next;
-  return true;
-};
+  same((0, _2.resolve)({ ':': true })({ url: '/default' }), { url: '/default', params: {} }, 'default - true');
 
-var society = function society(_ref15) {
-  var current = _ref15.current;
-  var next = _ref15.next;
-  return next({ ':event': event }) || is.str(current);
-};
+  same((0, _2.resolve)({ ':': function _(d) {
+      return true;
+    } })({ url: '/default' }), { url: '/default', params: {} }, 'default - true - fn');
 
-var event = function event(_ref16) {
-  var current = _ref16.current;
-  return current > 0;
-};
+  same((0, _2.resolve)({ foo: '..', ':': true })({ url: '/foo' }), { url: '/', params: {} }, 'relative redirect ..');
 
-_tap2.default.test('pure resolution', function (t) {
-  var _require = require('./');
+  same((0, _2.resolve)({ foo: '../', ':': true })({ url: '/foo' }), { url: '/', params: {} }, 'relative redirect ../');
 
-  var router = _require.router;
-  var resolve = _require.resolve;
+  same((0, _2.resolve)({
+    ':one': function one(_one) {
+      same(_one, 'one', 'one');
+      return {
+        ':two': function two(_two) {
+          same(_two, 'two', 'two');
+          return true;
+        }
+      };
+    }
+  })({ url: '/one/two' }), { url: '/one/two', params: { one: 'one', two: 'two' } }, 'two-level inner variables');
 
-  t.same(resolve(app)({ url: '/foo' }), { url: '/login', params: {} });
+  same((0, _2.resolve)({
+    ':one': function one(_one2) {
+      return {
+        ':two': function two(_two2) {
+          return '..';
+        },
+        ':': true
+      };
+    }
+  })({ url: '/one/two' }), { url: '/one', params: { one: 'one' } }, 'two-level relative redirect');
 
-  t.same(resolve(app)({ url: '/login' }), { url: '/login', params: {} });
+  same((0, _2.resolve)({
+    ':one': function one(_one3) {
+      return {
+        ':two': function two(_two3) {
+          return '..';
+        },
+        ':': true
+      };
+    }
+  })({ url: '/one/two' }), { url: '/one', params: { one: 'one' } }, 'two-level relative redirect');
 
-  t.same(resolve(app)({ url: '/login', email: true }), { url: '/dashboard/classes/today', params: { date: 'today' } });
+  same((0, _2.resolve)({ foo: { ':bar': function bar(_bar) {
+        return _bar == 'bar' ? true : '/foo';
+      }, ':': true } })({ url: '/foo/bar' }), { url: '/foo/bar', params: { bar: 'bar' } }, 'default with variable');
 
-  t.same(resolve(app)({ url: '/dashboard' }), { url: '/login', params: {} });
+  same((0, _2.resolve)({ foo: { ':bar': function bar(_bar2) {
+        return _bar2 == 'bar' ? true : '/foo';
+      }, ':': true } })({ url: '/foo/baz' }), { url: '/foo', params: {} }, 'default with variable - fallback');
 
-  t.same(resolve(app)({ url: '/dashboard', email: true }), { url: '/dashboard/classes/today', params: { date: 'today' } });
+  same((0, _2.resolve)({ foo: { ':bar': function bar(_bar3) {
+        return _bar3 ? true : '/foo/bar';
+      } } })({ url: '/foo' }), { url: '/foo/bar', params: { bar: 'bar' } }, 'no default variable');
 
-  // t.same(resolve(app)(
-  //   { url: '/dashboard/baz', email: true }),
-  //   { url: '/dashboard/classes/today', params: { date: 'today' } }
-  // )
-
-  t.same(resolve(app)({ url: '/dashboard/classes', email: true }), { url: '/dashboard/classes/today', params: { date: 'today' } });
-
-  t.same(resolve(app)({ url: '/dashboard/classes/tom', email: true }), { url: '/dashboard/classes/tom', params: { date: 'tom' } });
-
-  t.same(resolve(app)({ url: '/dashboard/teachers', email: true }), { url: '/dashboard/teachers', params: {} });
-
-  t.same(resolve(app)({ url: '/dashboard/teachers/foo', email: true }), { url: '/dashboard/teachers', params: {} });
-
-  t.same(resolve(app)({ url: '/dashboard/teachers/add', email: true }), { url: '/dashboard/teachers/add', params: { op: 'add' } });
-
-  t.same(resolve(app)({ url: '/dashboard/middle/foo/bar/baz', email: true }), { url: '/dashboard/middle/foo/bar/baz', params: { foo: 'foo', baz: 'baz' } });
-
-  t.same(resolve(app)({ url: '/dashboard/middle/foo/bar/baz', email: true }), { url: '/dashboard/middle/foo/bar/baz', params: { foo: 'foo', baz: 'baz' } });
-
-  t.same(resolve(app)({ url: '/dashboard/imperial', email: true }), { url: '/dashboard/imperial', params: { society: 'imperial' } });
-
-  t.same(resolve(app)({ url: '/dashboard/imperial/50', email: true }), { url: '/dashboard/imperial/50', params: { society: 'imperial', event: '50' } });
-
-  t.same(resolve(app)({ url: '/relative/redirect1' }), { url: '/relative', params: {} });
-
-  t.same(resolve(app)({ url: '/relative/redirect2' }), { url: '/relative', params: {} });
-
-  time(100, t.end);
+  end();
 });
 
-_tap2.default.test('side effects - server', function (t) {
-  var _require2 = require('./');
-
-  var router = _require2.router;
-  var resolve = _require2.resolve;
+(0, _tap.test)('side effects - server', function (_ref2) {
+  var ok = _ref2.ok;
+  var notOk = _ref2.notOk;
+  var same = _ref2.same;
+  var end = _ref2.end;
 
   var redirect = function redirect(d) {
     return redirected = d;
@@ -163,158 +115,120 @@ _tap2.default.test('side effects - server', function (t) {
       next = function next(d) {
     return passed = true;
   },
-      pass = function pass(_ref17) {
-    var url = _ref17.url;
-    return true;
-  },
-      skip = function skip(_ref18) {
-    var url = _ref18.url;
-    return url == '/bar' || '/bar';
-  },
+      skip = { 'bar': true, ':': '/bar' },
       redirected = false,
       passed = false,
       url = '/foo';
 
-  router(pass)({ url: url }, { redirect: redirect }, next);
-  t.ok(passed);
-  t.notOk(redirected);
+  (0, _2.router)(true)({ url: url }, { redirect: redirect }, next);
+  ok(passed, 'match passed');
+  notOk(redirected, 'match not redirected');
 
   passed = redirected = false;
-  router(skip)({ url: url }, { redirect: redirect }, next);
-  t.notOk(passed);
-  t.same(redirected, '/bar');
+  (0, _2.router)(skip)({ url: url }, { redirect: redirect }, next);
+  notOk(passed, 'redirect not passed');
+  same(redirected, '/bar', 'redirect');
 
-  t.end();
+  end();
 });
 
-_tap2.default.test('side effects - client', function (t) {
+(0, _tap.test)('client', function (_ref3) {
+  var test = _ref3.test;
+  var beforeEach = _ref3.beforeEach;
+  var end = _ref3.end;
+
   var pushState = function pushState(state, title, url) {
     return pushed = [state, title, url], location.pathname = url;
   },
-      pushed,
-      changed;
+      pushed = undefined,
+      changed = undefined,
+      prevented = undefined;
 
   delete global.window;
   delete global.document;
-  keys(require.cache).map(function (d) {
-    return delete require.cache[d];
-  });
-  require('browserenv');
-  global.CustomEvent = global.window.CustomEvent;
-  global.location = { pathname: '/foo' };
-  global.history = { pushState: pushState };
-  keys(require.cache).map(function (d) {
-    return delete require.cache[d];
-  });
-
-  var _require3 = require('./');
-
-  var router = _require3.router;
-  var resolve = _require3.resolve;
-
-  var pass = function pass(_ref19) {
-    var url = _ref19.url;
-    return true;
-  },
-      skip = function skip(_ref20) {
-    var url = _ref20.url;
-    return url == '/bar' || '/bar';
-  },
-      args = function args(_ref21) {
-    var next = _ref21.next;
-    return next({ foo: function foo(_ref22) {
-        var next = _ref22.next;
-        return next({ ':bar': function bar(d) {
-            return true;
-          } });
-      } }) || '/foo/baz';
-  };
-
-  window.addEventListener('change', function (e) {
-    return changed = true;
-  });
-
-  pushed = changed = false;
-  t.same(router(pass), { url: '/foo', params: {} });
-  t.same(location, { pathname: '/foo', params: {} });
-  t.notOk(changed);
-
-  pushed = changed = false;
-  t.same(router(skip), { url: '/bar', params: {} });
-  t.same(location, { pathname: '/bar', params: {} });
-  t.ok(changed);
-
-  pushed = changed = false;
-  t.same(router(args), { url: '/foo/baz', params: { bar: 'baz' } });
-  t.same(location, { pathname: '/foo/baz', params: { bar: 'baz' } });
-  t.ok(changed);
-
-  t.end();
-});
-
-_tap2.default.test('should allow manual navigations', function (t) {
-  var pushState = function pushState(state, title, url) {
-    return pushed = [state, title, url];
-  };
-  var pushed, prevented, changed;
-
-  delete global.window;
-  delete global.document;
-  keys(require.cache).map(function (d) {
+  (0, _pure.keys)(require.cache).map(function (d) {
     return delete require.cache[d];
   });
   require('browserenv');
   global.window.event = { preventDefault: function preventDefault(d) {
       return prevented = true;
     } };
-  global.CustomEvent = global.window.CustomEvent;
-  global.location = {};
-  global.history = { pushState: pushState };
-  keys(require.cache).map(function (d) {
-    return delete require.cache[d];
-  });
-
-  var _require4 = require('./');
-
-  var router = _require4.router;
-  var resolve = _require4.resolve;
-
   window.addEventListener('change', function (e) {
     return changed = true;
   });
+  global.CustomEvent = global.window.CustomEvent;
+  global.location = { pathname: '/foo' };
+  global.history = { pushState: pushState };
+  (0, _pure.keys)(require.cache).map(function (d) {
+    return delete require.cache[d];
+  });
+
+  var _require = require('./');
+
+  var router = _require.router;
+  var resolve = _require.resolve;
+
   var go = window.go;
 
-  t.same(go('/path'), '/path');
-  t.same(pushed, [{}, '', '/path']);
-  t.ok(prevented);
-  t.ok(changed);
-  t.end();
-});
+  test('side effects', function (_ref4) {
+    var ok = _ref4.ok;
+    var notOk = _ref4.notOk;
+    var same = _ref4.same;
+    var end = _ref4.end;
 
-_tap2.default.test('should trigger change on popstate', function (t) {
-  var changed = false;
+    console.log("1", 1);
+    var pass = function pass(d) {
+      return true;
+    },
+        skip = function skip(d) {
+      return { bar: true, ':': '/bar' };
+    },
+        args = function args(d) {
+      return { foo: { ':bar': true }, ':': '/foo/baz' };
+    };
 
-  delete global.window;
-  delete global.document;
-  keys(require.cache).map(function (d) {
-    return delete require.cache[d];
+    pushed = changed = false;
+    same(router(pass), { url: '/foo', params: {} });
+    same(location, { pathname: '/foo', params: {} });
+    notOk(changed);
+
+    pushed = changed = false;
+    same(router(skip), { url: '/bar', params: {} });
+    same(location, { pathname: '/bar', params: {} });
+    ok(changed);
+
+    pushed = changed = false;
+    same(router(args), { url: '/foo/baz', params: { bar: 'baz' } });
+    same(location, { pathname: '/foo/baz', params: { bar: 'baz' } });
+    ok(changed);
+
+    end();
   });
-  require('browserenv');
-  global.CustomEvent = global.window.CustomEvent;
-  keys(require.cache).map(function (d) {
-    return delete require.cache[d];
+
+  test('should allow manual navigations', function (_ref5) {
+    var same = _ref5.same;
+    var ok = _ref5.ok;
+    var end = _ref5.end;
+
+    global.location = {};
+    pushed = prevented = changed = false;
+
+    same(go('/path'), '/path', 'go return value');
+    same(pushed, [{}, '', '/path'], 'go pushState');
+    ok(prevented, 'go preventDefault');
+    ok(changed, 'go window change');
+    end();
   });
 
-  var _require5 = require('./');
+  test('should trigger change on popstate', function (_ref6) {
+    var ok = _ref6.ok;
+    var end = _ref6.end;
 
-  var router = _require5.router;
-  var resolve = _require5.resolve;
-
-  window.addEventListener('change', function (e) {
-    return changed = true;
+    pushed = prevented = changed = false;
+    window.dispatchEvent(new CustomEvent('popstate'));
+    ok(changed, 'popstate change');
+    end();
   });
-  window.dispatchEvent(new CustomEvent('popstate'));
 
-  t.ok(changed);
-  t.end();
+  end();
 });

@@ -1,28 +1,24 @@
 'use strict';
 
+var _slicedToArray = (function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; })();
+
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.resolve = exports.router = undefined;
 
-var _client = require('utilise/client');
+var _pure = require('utilise/pure');
 
-var _client2 = _interopRequireDefault(_client);
-
-var _keys = require('utilise/keys');
-
-var _keys2 = _interopRequireDefault(_keys);
-
-/* istanbul ignore next */
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-var log = require('utilise/log')('[router]');
-var go = function go(url) {
-  return (window.event && window.event.preventDefault(), true), history.pushState({}, '', url), window.dispatchEvent(new CustomEvent('change')), url;
+var log = require('utilise/log')('[router]'),
+    go = function go(url) {
+  if (window.event) window.event.preventDefault();
+  history.pushState({}, '', url);
+  window.dispatchEvent(new CustomEvent('change'));
+  return url;
 };
 
 var router = function router(routes) {
-  return !_client2.default ? route : route({ url: location.pathname });
+  return !_pure.client ? route : route({ url: location.pathname });
 
   function route(req, res, next) {
     var from = req.url,
@@ -30,48 +26,58 @@ var router = function router(routes) {
         to = resolved.url;
 
     if (from !== to) log('router redirecting', from, to);
-    if (_client2.default) location.params = resolved.params;
+    if (_pure.client) location.params = resolved.params;
 
-    return _client2.default && from !== to ? (go(to), resolved) : !_client2.default && from !== to ? res.redirect(to) : !_client2.default ? next() : resolved;
+    return _pure.client && from !== to ? (go(to), resolved) : !_pure.client && from !== to ? res.redirect(to) : !_pure.client ? next() : resolved;
   }
 };
 
-var resolve = function resolve(root) {
-  return function (req, from) {
-    var params = {},
-        url = from || req.url,
-        to = root({ url: url, req: req, params: params, next: next(req, url, params) });
+var resolve = function resolve(routes) {
+  return function (req) {
+/* istanbul ignore next */
+    var url = arguments.length <= 1 || arguments[1] === undefined ? req.url : arguments[1];
 
-    return to == '../' || to == '..' ? resolve(root)(req, '/' + url.split('/').filter(Boolean).slice(0, -1).join('/')) : to !== true ? resolve(root)(req, to) : { url: url, params: params };
+    var params = {},
+        to = next(req, params, url, routes);
+
+    return to == '../' || to == '..' ? resolve(routes)(req, '/' + url.split('/').filter(Boolean).slice(0, -1).join('/')) : !to ? false : to !== true ? resolve(routes)(req, to) : { url: url, params: params };
   };
 };
 
-var next = function next(req, url, params) {
-  return function (handlers) {
-    var _segment = segment(url);
+var next = function next(req) {
+/* istanbul ignore next */
+  var params = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+  var url = arguments[2];
+  var value = arguments[3];
+  var variable = arguments[4];
 
-    var first = _segment.first;
-    var last = _segment.last;
-    var to = '';
+  var _segment = segment(url);
 
-    return !first ? false : first in handlers ? handlers[first]({ req: req, next: next(req, last, params), params: params, current: first }) : (0, _keys2.default)(handlers).filter(function (k) {
-      return k[0] == ':';
-    }).some(function (k) {
-      var pm = k.slice(1);
-      // TODO === true
-      if (to = handlers[k]({ req: req, next: next(req, last, params), params: params, current: first })) params[pm] = first;
+  var cur = _segment.cur;
+  var remainder = _segment.remainder;
 
-      return to;
-    }) && to;
-  };
+  return _pure.is.str(value) || _pure.is.bol(value) ? value : _pure.is.fn(value) && !_pure.is.def(variable) ? next(req, params, url, value(req)) : _pure.is.fn(value) ? next(req, params, url, value(variable, req)) : cur in value ? next(req, params, remainder, value[cur]) : !cur && value[':'] ? next(req, params, remainder, value[':']) : (0, _pure.key)('value')(variables(value).find(function (d) {
+    return (d.value = next(req, params, remainder, value[d.key], cur || false)) ? (d.value === true && d.name && (params[d.name] = cur), true) : false;
+  }));
+};
+
+var variables = function variables(routes) {
+  return (0, _pure.keys)(routes).filter(function (_ref) {
+    var _ref2 = _slicedToArray(_ref, 1);
+
+    var f = _ref2[0];
+    return f == ':';
+  }).map(function (k) {
+    return { key: k, name: k.slice(1) };
+  });
 };
 
 function segment(url) {
   var segments = url.split('/').filter(Boolean);
-  return { first: segments.shift(), last: '/' + segments.join('/') };
+  return { cur: segments.shift(), remainder: '/' + segments.join('/') };
 }
 
-if (_client2.default) {
+if (_pure.client) {
   (function () {
     var draw = window.app && window.app.draw || document.draw || String;
     window.go = go;
