@@ -1,5 +1,7 @@
 # Decouter
 
+## [![Coverage Status](https://coveralls.io/repos/pemrouz/decouter/badge.svg?branch=master)](https://coveralls.io/r/pemrouz/decouter?branch=master) [![Build](https://api.travis-ci.org/pemrouz/decouter.svg)](https://travis-ci.org/pemrouz/decouter)
+
 * **Trie-based structure:** The main goal is to deliver a tighter UX around URL's. As your routes grow, it becomes difficult to reason about your them as a flat-list, and they often become flaky. Decouter allows you to specifiy your routes as a tree.
 * **Fast:**: O(1) with respect to number of routes
 * **Client & Server:** Avoid sending client to wrong page just to redirect + avoid duplicating route logic
