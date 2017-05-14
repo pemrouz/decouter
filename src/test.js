@@ -1,240 +1,250 @@
-import 'utilise'
-import core from 'rijs.core'
-import data from 'rijs.data'
-import t from 'tap'
+import { test } from 'tap'
+import { keys } from 'utilise/pure'
+import { resolve, router } from './'
 
-const today = 'today'
+test('pure resolution', ({ same, end }) => {
 
-const whos = req => req
-
-const app = ({ next }) => 
-  next({ dashboard, login, relative, redirect1 }) ||  '/login'
-
-const login = ({ req }) => 
-  whos(req).email ? '/dashboard' : true
-
-const dashboard = ({ req, next }) => 
-    !whos(req).email ? '/login' 
-   : next({ classes, teachers, middle, ':society': society }) 
-  || `/dashboard/classes/${today}`
-
-const relative = ({ next }) => next({ redirect1, redirect2, ':param': param }) || true
-
-const redirect1 = ({ }) => '../'
-
-const redirect2 = ({ }) => '..'
-
-const param = () => 'error'
-
-const teachers = ({ next }) => 
-  next({ ':op': ({ current }) => current !== 'add' ? '/dashboard/teachers' : true }) || true
-
-const classes = ({ next }) => 
-  next({ ':date': ({ current }) => !!current || `/dashboard/classes/${today}` })
-
-const middle = ({ next }) => next({ ':foo': foo })
-const foo    = ({ next }) => next({  'bar': bar })
-const bar    = ({ next }) => next({ ':baz': baz })
-const baz    = ({ next }) => true
-
-const society = ({ current, next }) =>
-  next({ ':event': event }) || is.str(current)
-
-const event = ({ current }) => current > 0
-
-t.test('pure resolution', t => {
-  const { router, resolve } = require('./')
-
-  t.same(resolve(app)(
-    { url: '/foo' }), 
-    { url: '/login', params: {} }
+  same(resolve(req => ({ foo: true }))(
+    { url: '/foo' })
+  , { url: '/foo', params: {} }
+  , 'top-level fn'
   )
 
-  t.same(resolve(app)(
-    { url: '/login' }), 
-    { url: '/login', params: {} }
+  same(resolve(true)(
+    { url: '/always-true' }), 
+    { url: '/always-true', params: {} }
+  , 'always true'
   )
 
-  t.same(resolve(app)(
-    { url: '/login', email: true }), 
-    { url: '/dashboard/classes/today', params: { date: 'today' } }
+  same(resolve({ foo: true })(
+    { url: '/foo' })
+  , { url: '/foo', params: {} }
+  , 'fixed path'
   )
 
-  t.same(resolve(app)(
-    { url: '/dashboard' }), 
-    { url: '/login', params: {} }
+  same(resolve({ foo: true })(
+    { url: '/not-foo' })
+  , false
+  , 'fixed path unmatched'
   )
 
-  t.same(resolve(app)(
-    { url: '/dashboard', email: true }), 
-    { url: '/dashboard/classes/today', params: { date: 'today' } }
+  same(resolve({ ':foo': true })(
+    { url: '/var-foo' })
+  , { url: '/var-foo', params: { foo: 'var-foo' } }
+  , 'variable path - always true'
   )
 
-  // t.same(resolve(app)(
-  //   { url: '/dashboard/baz', email: true }), 
-  //   { url: '/dashboard/classes/today', params: { date: 'today' } }
-  // )
-
-  t.same(resolve(app)(
-    { url: '/dashboard/classes', email: true }), 
-    { url: '/dashboard/classes/today', params: { date: 'today' }}
+  same(resolve({ foo: { bar: true } })(
+    { url: '/foo/bar' })
+  , { url: '/foo/bar', params: {} }
+  , 'two-level - always true'
   )
 
-  t.same(resolve(app)(
-    { url: '/dashboard/classes/tom', email: true }), 
-    { url: '/dashboard/classes/tom', params: { date: 'tom' }}
+  same(resolve({ foo: { bar: '/baz/boo' }, baz: { boo: true } })(
+    { url: '/foo/bar' })
+  , { url: '/baz/boo', params: {} }
+  , 'two-level - redirect'
   )
 
-  t.same(resolve(app)
-    ({ url: '/dashboard/teachers', email: true }), 
-    { url: '/dashboard/teachers', params: {}}
+  same(resolve({ foo: { ':bar': true } })(
+    { url: '/foo/bar' })
+  , { url: '/foo/bar', params: { bar: 'bar' } }
+  , 'two-level - variable'
   )
 
-  t.same(resolve(app)(
-    { url: '/dashboard/teachers/foo', email: true }), 
-    { url: '/dashboard/teachers', params: {}}
+  same(resolve({ ':soc': soc => ({ ':eve': eve => true }) })(
+    { url: '/soc/eve' })
+  , { url: '/soc/eve', params: { soc: 'soc', eve: 'eve' } }
+  , 'two-level variables'
   )
 
-  t.same(resolve(app)(
-    { url: '/dashboard/teachers/add', email: true }), 
-    { url: '/dashboard/teachers/add', params: { op: 'add' }}
+  same(resolve({ foo: { ':bar': { baz: true } } })(
+    { url: '/foo/bar/baz' })
+  , { url: '/foo/bar/baz', params: { bar: 'bar' } }
+  , 'three-level - intermediate variable'
   )
 
-  t.same(resolve(app)(
-    { url: '/dashboard/middle/foo/bar/baz', email: true }), 
-    { url: '/dashboard/middle/foo/bar/baz', params: { foo: 'foo', baz: 'baz' }}
+  same(resolve({ foo: { ':bar': false, ':baz': true } })(
+    { url: '/foo/boo' })
+  , { url: '/foo/boo', params: { baz: 'boo' } }
+  , 'multi-variable'
   )
 
-  t.same(resolve(app)(
-    { url: '/dashboard/middle/foo/bar/baz', email: true }), 
-    { url: '/dashboard/middle/foo/bar/baz', params: { foo: 'foo', baz: 'baz' }}
+  same(resolve({ ':': '/login', 'login': true })(
+    { url: '/default' })
+  , { url: '/login', params: {} }
+  , 'default - string'
   )
 
-  t.same(resolve(app)(
-    { url: '/dashboard/imperial', email: true }), 
-    { url: '/dashboard/imperial', params: { society: 'imperial' }}
+  same(resolve({ ':': d => '/login', 'login': true })(
+    { url: '/default' })
+  , { url: '/login', params: {} }
+  , 'default - string - fn'
   )
 
-  t.same(resolve(app)(
-    { url: '/dashboard/imperial/50', email: true }), 
-    { url: '/dashboard/imperial/50', params: { society: 'imperial', event: '50' }}
+  same(resolve({ ':': true })(
+    { url: '/default' })
+  , { url: '/default', params: {} }
+  , 'default - true'
   )
 
-  t.same(resolve(app)(
-    { url: '/relative/redirect1' }), 
-    { url: '/relative', params: {} }
+  same(resolve({ ':': d => true })(
+    { url: '/default' })
+  , { url: '/default', params: {} }
+  , 'default - true - fn'
   )
 
-  t.same(resolve(app)(
-    { url: '/relative/redirect2' }), 
-    { url: '/relative', params: {} }
+  same(resolve({ foo: '..', ':': true })(
+    { url: '/foo' })
+  , { url: '/', params: {} }
+  , 'relative redirect ..'
   )
 
-  time(100, t.end)
+  same(resolve({ foo: '../', ':': true })(
+    { url: '/foo' })
+  , { url: '/', params: {} }
+  , 'relative redirect ../'
+  )
+
+  same(resolve({ 
+    ':one': one => {
+      same(one, 'one', 'one')
+      return { 
+        ':two': two => {
+          same(two, 'two', 'two')
+          return true 
+        }
+      }
+    }
+  })(
+    { url: '/one/two' })
+  , { url: '/one/two', params: { one: 'one', two: 'two' } }
+  , 'two-level inner variables'
+  )
+
+  same(resolve({ 
+    ':one': one => ({
+      ':two': two => '..'
+    , ':': true
+    })
+  })  (
+    { url: '/one/two' })
+  , { url: '/one', params: { one: 'one' } }
+  , 'two-level relative redirect'
+  )
+
+  same(resolve({ 
+    ':one': one => ({
+      ':two': two => '..'
+    , ':': true
+    })
+  })  (
+    { url: '/one/two' })
+  , { url: '/one', params: { one: 'one' } }
+  , 'two-level relative redirect'
+  )
+
+  same(resolve({ foo: { ':bar': bar => bar == 'bar' ? true : '/foo', ':': true } })(
+    { url: '/foo/bar' })
+  , { url: '/foo/bar', params: { bar: 'bar' } }
+  , 'default with variable'
+  )
+
+  same(resolve({ foo: { ':bar': bar => bar == 'bar' ? true : '/foo', ':': true } })(
+    { url: '/foo/baz' })
+  , { url: '/foo', params: {} }
+  , 'default with variable - fallback'
+  )
+
+  same(resolve({ foo: { ':bar': bar => bar ? true : '/foo/bar' } })(
+    { url: '/foo' })
+  , { url: '/foo/bar', params: { bar: 'bar' } }
+  , 'no default variable'
+  )
+
+  end()
 })
 
-t.test('side effects - server', t => {
-  const { router, resolve } = require('./')
-
-  var redirect = d => redirected = d
-    , next = d => passed = true
-    , pass = ({ url }) => true
-    , skip = ({ url }) => url == '/bar' || '/bar'
+test('side effects - server', ({ ok, notOk, same, end }) => {
+  let redirect = d => (redirected = d)
+    , next = d => (passed = true)
+    , skip = { 'bar': true, ':': '/bar' }
     , redirected = false
     , passed = false
     , url = '/foo'
 
-  router(pass)({ url }, { redirect }, next)
-  t.ok(passed)
-  t.notOk(redirected)
+  router(true)({ url }, { redirect }, next)
+  ok(passed, 'match passed')
+  notOk(redirected, 'match not redirected')
 
   passed = redirected = false
   router(skip)({ url }, { redirect }, next)
-  t.notOk(passed)
-  t.same(redirected, '/bar')
+  notOk(passed, 'redirect not passed')
+  same(redirected, '/bar', 'redirect')
 
-  t.end()
+  end()
 })
 
-t.test('side effects - client', t => {
-  var pushState = (state, title, url) => (pushed = [state, title, url], location.pathname = url)
-    , pushed, changed
-  
-  delete global.window
-  delete global.document
-  keys(require.cache).map(d => delete require.cache[d])
-  require('browserenv')
-  global.CustomEvent = global.window.CustomEvent
-  global.location = { pathname: '/foo' }
-  global.history = { pushState }
-  keys(require.cache).map(d => delete require.cache[d])
-
-  const { router, resolve } = require('./')
-
-  var pass = ({ url  }) => true
-    , skip = ({ url  }) => url == '/bar' || '/bar'
-    , args = ({ next }) => next({ foo: ({ next }) => next({ ':bar': d => true }) }) || '/foo/baz'
-  
-  window.addEventListener('change', e => changed = true)
-
-  pushed = changed = false
-  t.same(router(pass), { url: '/foo', params: {} })
-  t.same(location, { pathname: '/foo', params: {} })
-  t.notOk(changed)
-
-  pushed = changed = false
-  t.same(router(skip), { url: '/bar', params: {} })
-  t.same(location, { pathname: '/bar', params: {} })
-  t.ok(changed)
-
-  pushed = changed = false
-  t.same(router(args), { url: '/foo/baz', params: { bar: 'baz' } })
-  t.same(location, { pathname: '/foo/baz', params: { bar: 'baz' } })
-  t.ok(changed)
-  
-  t.end()
-})
-
-t.test('should allow manual navigations', t => {
-  const pushState = (state, title, url) => pushed = [state, title, url]
-  var pushed, prevented, changed
+test('client', ({ test, beforeEach , end }) => {
+  let pushState = (state, title, url) => (pushed = [state, title, url], location.pathname = url)
+    , pushed, changed, prevented
 
   delete global.window
   delete global.document
   keys(require.cache).map(d => delete require.cache[d])
   require('browserenv')
   global.window.event = { preventDefault: d => prevented = true }
+  window.addEventListener('change', e => changed = true)
   global.CustomEvent = global.window.CustomEvent
-  global.location = { }
+  global.location = { pathname: '/foo' }
   global.history = { pushState }
   keys(require.cache).map(d => delete require.cache[d])
-
   const { router, resolve } = require('./')
-
-  window.addEventListener('change', e => changed = true)
   const go = window.go
 
-  t.same(go('/path'), '/path')
-  t.same(pushed, [{}, '', '/path'])
-  t.ok(prevented)
-  t.ok(changed)
-  t.end()
+  test('side effects', ({ ok, notOk, same, end }) => {
+    console.log("1", 1)
+    let pass = d => true
+      , skip = d => ({ bar: true, ':': '/bar' })
+      , args = d => ({ foo: { ':bar': true }, ':': '/foo/baz' })
+    
+
+    pushed = changed = false
+    same(router(pass), { url: '/foo', params: {} })
+    same(location, { pathname: '/foo', params: {} })
+    notOk(changed)
+
+    pushed = changed = false
+    same(router(skip), { url: '/bar', params: {} })
+    same(location, { pathname: '/bar', params: {} })
+    ok(changed)
+
+    pushed = changed = false
+    same(router(args), { url: '/foo/baz', params: { bar: 'baz' } })
+    same(location, { pathname: '/foo/baz', params: { bar: 'baz' } })
+    ok(changed)
+
+    end()
+  })
+
+  test('should allow manual navigations', ({ same, ok, end }) => {
+    global.location = { }
+    pushed = prevented = changed = false
+
+    same(go('/path'), '/path', 'go return value')
+    same(pushed, [{}, '', '/path'], 'go pushState')
+    ok(prevented, 'go preventDefault')
+    ok(changed, 'go window change')
+    end()
+  })
+
+  test('should trigger change on popstate', ({ ok, end }) => {
+    pushed = prevented = changed = false
+    window.dispatchEvent(new CustomEvent('popstate'))
+    ok(changed, 'popstate change')
+    end()
+  })
+
+  end()
 })
 
-t.test('should trigger change on popstate', t => {
-  var changed = false
-  
-  delete global.window
-  delete global.document
-  keys(require.cache).map(d => delete require.cache[d])
-  require('browserenv')
-  global.CustomEvent = global.window.CustomEvent
-  keys(require.cache).map(d => delete require.cache[d])
-  
-  const { router, resolve } = require('./')
-  window.addEventListener('change', e => changed = true)
-  window.dispatchEvent(new CustomEvent('popstate'))
-
-  t.ok(changed)
-  t.end()
-})
