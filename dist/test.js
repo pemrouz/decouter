@@ -7,8 +7,9 @@ var _pure = require('utilise/pure');
 var _2 = require('./');
 
 (0, _tap.test)('pure resolution', function (_ref) {
-  var same = _ref.same;
-  var end = _ref.end;
+  var same = _ref.same,
+      end = _ref.end;
+
 
   same((0, _2.resolve)(function (req) {
     return { foo: true };
@@ -104,10 +105,10 @@ var _2 = require('./');
 });
 
 (0, _tap.test)('side effects - server', function (_ref2) {
-  var ok = _ref2.ok;
-  var notOk = _ref2.notOk;
-  var same = _ref2.same;
-  var end = _ref2.end;
+  var ok = _ref2.ok,
+      notOk = _ref2.notOk,
+      same = _ref2.same,
+      end = _ref2.end;
 
   var redirect = function redirect(d) {
     return redirected = d;
@@ -133,16 +134,16 @@ var _2 = require('./');
 });
 
 (0, _tap.test)('client', function (_ref3) {
-  var test = _ref3.test;
-  var beforeEach = _ref3.beforeEach;
-  var end = _ref3.end;
+  var test = _ref3.test,
+      beforeEach = _ref3.beforeEach,
+      end = _ref3.end;
 
   var pushState = function pushState(state, title, url) {
     return pushed = [state, title, url], location.pathname = url;
   },
-      pushed = undefined,
-      changed = undefined,
-      prevented = undefined;
+      pushed = void 0,
+      changed = void 0,
+      prevented = void 0;
 
   delete global.window;
   delete global.document;
@@ -163,18 +164,17 @@ var _2 = require('./');
     return delete require.cache[d];
   });
 
-  var _require = require('./');
-
-  var router = _require.router;
-  var resolve = _require.resolve;
+  var _require = require('./'),
+      router = _require.router,
+      resolve = _require.resolve;
 
   var go = window.go;
 
   test('side effects', function (_ref4) {
-    var ok = _ref4.ok;
-    var notOk = _ref4.notOk;
-    var same = _ref4.same;
-    var end = _ref4.end;
+    var ok = _ref4.ok,
+        notOk = _ref4.notOk,
+        same = _ref4.same,
+        end = _ref4.end;
 
     console.log("1", 1);
     var pass = function pass(d) {
@@ -206,9 +206,9 @@ var _2 = require('./');
   });
 
   test('should allow manual navigations', function (_ref5) {
-    var same = _ref5.same;
-    var ok = _ref5.ok;
-    var end = _ref5.end;
+    var same = _ref5.same,
+        ok = _ref5.ok,
+        end = _ref5.end;
 
     global.location = {};
     pushed = prevented = changed = false;
@@ -221,8 +221,8 @@ var _2 = require('./');
   });
 
   test('should trigger change on popstate', function (_ref6) {
-    var ok = _ref6.ok;
-    var end = _ref6.end;
+    var ok = _ref6.ok,
+        end = _ref6.end;
 
     pushed = prevented = changed = false;
     window.dispatchEvent(new CustomEvent('popstate'));
