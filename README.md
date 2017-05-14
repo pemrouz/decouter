@@ -3,9 +3,9 @@
 ## [![Coverage Status](https://coveralls.io/repos/pemrouz/decouter/badge.svg?branch=master)](https://coveralls.io/r/pemrouz/decouter?branch=master) [![Build](https://api.travis-ci.org/pemrouz/decouter.svg)](https://travis-ci.org/pemrouz/decouter)
 
 * **Trie-based structure:** The main goal is to deliver a tighter UX around URL's. As your routes grow, it becomes difficult to reason about your them as a flat-list, and they often become flaky. Decouter allows you to specifiy your routes as a tree.
-* **Fast:**: O(1) with respect to number of routes
+* **Fast:** O(1) with respect to number of routes
 * **Client & Server:** Avoid sending client to wrong page just to redirect + avoid duplicating route logic
-* **Intuitive & Expressive:**: Each level can return a boolean to indicate a match, a string to indicate a redirect, an object to, or a promise that resolves to either of these values, or a function that returns either of these values.
+* **Intuitive & Expressive:** Each level can return a boolean to indicate a match, a string to indicate a redirect, an object to, or a promise that resolves to either of these values, or a function that returns either of these values.
 * **Pure + Batteries-Included Version:** Works as middleware with express, `go(url)` for programmatic control, automatic redirects, works with history API, anchor tags (event inside Shadow DOM), extends `location` with `params` object after successful match.
 * **Small:** ~1kB min+gzip (ES6 version is smaller)
 * **Lazy-loading:** Because any segment can return a promise, you can chunk up your route logic into separate parts.
