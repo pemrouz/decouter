@@ -1,11 +1,12 @@
-import client from 'utilise/client'
-import keys from 'utilise/keys'
+import { key, keys, is, client } from 'utilise/pure'
 
 const log = require('utilise/log')('[router]')
-const go  = url => ((window.event && window.event.preventDefault(), true)
-                   , history.pushState({}, '', url)
-                   , window.dispatchEvent(new CustomEvent('change'))
-                   , url)
+    , go  = url => {
+        if (window.event) window.event.preventDefault()
+        history.pushState({}, '', url)
+        window.dispatchEvent(new CustomEvent('change'))
+        return url
+      }
 
 const router = routes => {
   return !client ? route : route({ url: location.pathname }) 
@@ -25,38 +26,41 @@ const router = routes => {
   } 
 }
 
-const resolve = root => (req, from) => {
+const resolve = routes => (req, url = req.url) => {
   const params = {}
-      , url = from || req.url
-      , to = root({ url, req, params, next: next(req, url, params) })
+      , to = next(req, params, url, routes)
 
-  return to == '../' || to == '..' ? resolve(root)(req, '/' + url.split('/').filter(Boolean).slice(0, -1).join('/'))
-       : to !== true ? resolve(root)(req, to)
+  return to == '../' || to == '..' ? resolve(routes)(req, '/' + url.split('/').filter(Boolean).slice(0, -1).join('/'))
+       : !to ? false
+       : to !== true ? resolve(routes)(req, to)
        : { url, params }
 }
 
-const next = (req, url, params) => handlers => {
-  var { first, remainder } = segment(url)
-    , to = ''
+const next = (req, params = {}, url, value, variable) => {
+  const { cur, remainder } = segment(url)
 
-  return !first ? false 
-       : first in handlers ? handlers[first]({ req, next: next(req, remainder, params), params, current: first })
-       : keys(handlers)
-          .filter(k => k[0] == ':')
-          .some(k => {
-            const pm = k.slice(1)
-
-            // TODO === true
-            if (to = handlers[k]({ req, next: next(req, remainder, params), params, [pm]: first }))
-              params[pm] = first
-
-            return to
-          }) && to
+  return is.str(value) || is.bol(value) ? value
+       : is.fn(value) && !is.def(variable) ? next(req, params, url, value(req))
+       : is.fn(value) ? next(req, params, url, value(variable, req))
+       : cur in value ? next(req, params, remainder, value[cur])
+       : !cur && value[':'] ? next(req, params, remainder, value[':'])
+       : key('value')(
+          variables(value)
+            .find(d => (((d.value = next(req, params, remainder, value[d.key], cur || false)))
+              ? (d.value === true && d.name && (params[d.name] = cur), true) 
+              : false
+              )
+            )
+         )
 }
+
+const variables = routes => keys(routes)
+  .filter(([f]) => f == ':')
+  .map(k => ({ key: k, name: k.slice(1) }))
 
 function segment(url) {
   const segments = url.split('/').filter(Boolean)
-  return { first: segments.shift(), remainder: '/' + segments.join('/') }
+  return { cur: segments.shift(), remainder: '/' + segments.join('/') }
 }
 
 if (client) {
