@@ -37,9 +37,12 @@ var resolve = function resolve(routes) {
     var url = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : req.url;
 
     var params = {},
-        to = next(req, params, url, routes);
+        to = next(req, params, url, routes),
+        finish = function finish(to) {
+      return to == '../' || to == '..' ? resolve(routes)(req, '/' + url.split('/').filter(Boolean).slice(0, -1).join('/')) : !to ? false : to !== true ? resolve(routes)(req, to) : { url: url, params: params };
+    };
 
-    return to == '../' || to == '..' ? resolve(routes)(req, '/' + url.split('/').filter(Boolean).slice(0, -1).join('/')) : !to ? false : to !== true ? resolve(routes)(req, to) : { url: url, params: params };
+    return _pure.is.promise(to) ? to.then(finish) : finish(to);
   };
 };
 
@@ -53,7 +56,9 @@ var next = function next(req) {
       cur = _segment.cur,
       remainder = _segment.remainder;
 
-  return _pure.is.str(value) || _pure.is.bol(value) ? value : _pure.is.fn(value) && !_pure.is.def(variable) ? next(req, params, url, value(req)) : _pure.is.fn(value) ? next(req, params, url, value(variable, req)) : cur in value ? next(req, params, remainder, value[cur]) : !cur && value[':'] ? next(req, params, remainder, value[':']) : (0, _pure.key)('value')(variables(value).find(function (d) {
+  return _pure.is.promise(value) ? value.then(function (v) {
+    return next(req, params, url, v, variable);
+  }) : _pure.is.str(value) || _pure.is.bol(value) ? value : _pure.is.fn(value) && !_pure.is.def(variable) ? next(req, params, url, value(req)) : _pure.is.fn(value) ? next(req, params, url, value(variable, req)) : cur in value ? next(req, params, remainder, value[cur]) : !cur && value[':'] ? next(req, params, remainder, value[':']) : (0, _pure.key)('value')(variables(value).find(function (d) {
     return (d.value = next(req, params, remainder, value[d.key], cur || false)) ? (d.value === true && d.name && (params[d.name] = cur), true) : false;
   }));
 };

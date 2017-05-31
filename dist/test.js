@@ -6,7 +6,7 @@ var _pure = require('utilise/pure');
 
 var _2 = require('./');
 
-(0, _tap.test)('pure resolution', function (_ref) {
+(0, _tap.test)('pure resolution', async function (_ref) {
   var same = _ref.same,
       end = _ref.end;
 
@@ -15,11 +15,19 @@ var _2 = require('./');
     return { foo: true };
   })({ url: '/foo' }), { url: '/foo', params: {} }, 'top-level fn');
 
+  same((await (0, _2.resolve)(async function (req) {
+    return { foo: true };
+  })({ url: '/foo' })), { url: '/foo', params: {} }, 'top-level fn');
+
   same((0, _2.resolve)(true)({ url: '/always-true' }), { url: '/always-true', params: {} }, 'always true');
 
   same((0, _2.resolve)({ foo: true })({ url: '/foo' }), { url: '/foo', params: {} }, 'fixed path');
 
   same((0, _2.resolve)({ foo: true })({ url: '/not-foo' }), false, 'fixed path unmatched');
+
+  same((await (0, _2.resolve)(function (async) {
+    return { ':foo': true };
+  })({ url: '/var-foo' })), { url: '/var-foo', params: { foo: 'var-foo' } }, 'variable path - always true - promise');
 
   same((0, _2.resolve)({ ':foo': true })({ url: '/var-foo' }), { url: '/var-foo', params: { foo: 'var-foo' } }, 'variable path - always true');
 
