@@ -29,17 +29,20 @@ const router = routes => {
 const resolve = routes => (req, url = req.url) => {
   const params = {}
       , to = next(req, params, url, routes)
+      , finish = to => 
+           to == '../' || to == '..' ? resolve(routes)(req, '/' + url.split('/').filter(Boolean).slice(0, -1).join('/'))
+         : !to ? false
+         : to !== true ? resolve(routes)(req, to)
+         : { url, params }
 
-  return to == '../' || to == '..' ? resolve(routes)(req, '/' + url.split('/').filter(Boolean).slice(0, -1).join('/'))
-       : !to ? false
-       : to !== true ? resolve(routes)(req, to)
-       : { url, params }
+  return is.promise(to) ? to.then(finish) : finish(to)
 }
 
 const next = (req, params = {}, url, value, variable) => {
   const { cur, remainder } = segment(url)
 
-  return is.str(value) || is.bol(value) ? value
+  return is.promise(value) ? value.then(v => next(req, params, url, v, variable))
+       : is.str(value) || is.bol(value) ? value
        : is.fn(value) && !is.def(variable) ? next(req, params, url, value(req))
        : is.fn(value) ? next(req, params, url, value(variable, req))
        : cur in value ? next(req, params, remainder, value[cur])

@@ -2,9 +2,15 @@ import { test } from 'tap'
 import { keys } from 'utilise/pure'
 import { resolve, router } from './'
 
-test('pure resolution', ({ same, end }) => {
+test('pure resolution', async ({ same, end }) => {
 
   same(resolve(req => ({ foo: true }))(
+    { url: '/foo' })
+  , { url: '/foo', params: {} }
+  , 'top-level fn'
+  )
+
+  same(await resolve(async req => ({ foo: true }))(
     { url: '/foo' })
   , { url: '/foo', params: {} }
   , 'top-level fn'
@@ -26,6 +32,12 @@ test('pure resolution', ({ same, end }) => {
     { url: '/not-foo' })
   , false
   , 'fixed path unmatched'
+  )
+
+  same(await resolve(async => ({ ':foo': true }))(
+    { url: '/var-foo' })
+  , { url: '/var-foo', params: { foo: 'var-foo' } }
+  , 'variable path - always true - promise'
   )
 
   same(resolve({ ':foo': true })(
