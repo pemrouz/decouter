@@ -1,4 +1,7 @@
-import { key, keys, is, client } from 'utilise/pure'
+const client = require('utilise/client')
+    , keys = require('utilise/keys')
+    , key = require('utilise/key')
+    , is = require('utilise/is')
 
 const log = require('utilise/log')('[router]')
     , go  = url => {
@@ -14,15 +17,17 @@ const router = routes => {
   function route(req, res, next) { 
     const from = req.url
         , resolved = resolve(routes)(req)
-        , to = resolved.url
+        , finish = ({ url, params }) => {
+            if (from !== url) log('router redirecting', from, url)
+            if (client) location.params = params
 
-    if (from !== to) log('router redirecting', from, to)
-    if (client) location.params = resolved.params
-
-    return client && from !== to ? (go(to), resolved)
-        : !client && from !== to ? res.redirect(to)
-        : !client                ? next()
-        : resolved
+            return client && from !== url ? (go(url), { url, params })
+                : !client && from !== url ? res.redirect(url)
+                : !client                 ? next()
+                : { url, params }
+        }
+        
+    return is.promise(resolved) ? resolved.then(finish) : finish(resolved)
   } 
 }
 
@@ -47,19 +52,22 @@ const next = (req, params = {}, url, value, variable) => {
        : is.fn(value) ? next(req, params, url, value(variable, req))
        : cur in value ? next(req, params, remainder, value[cur])
        : !cur && value[':'] ? next(req, params, remainder, value[':'])
-       : key('value')(
-          variables(value)
-            .find(d => (((d.value = next(req, params, remainder, value[d.key], cur || false)))
-              ? (d.value === true && d.name && (params[d.name] = cur), true) 
-              : false
-              )
-            )
+       : variables(
+           params
+         , (route) => next(req, params, remainder, value[route.key], cur || false)
+         , (route, result) => result === true && route.name && (params[route.name] = cur)
+         , keys(value)
+             .filter(([f]) => f == ':')
+             .map(k => ({ key: k, name: k.slice(1) }))
          )
 }
 
-const variables = routes => keys(routes)
-  .filter(([f]) => f == ':')
-  .map(k => ({ key: k, name: k.slice(1) }))
+const variables = (params, match, success, routes, route = routes.shift()) => 
+  !route ? false : Promise.resolve(match(route))
+    .then(result => result 
+       ? (success(route, result), result)
+       : variables(params, match, success, routes)
+    )
 
 function segment(url) {
   const segments = url.split('/').filter(Boolean)
@@ -82,4 +90,4 @@ if (client) {
   })
 }
 
-export { router, resolve }
+module.exports = { router, resolve }

@@ -1,44 +1,32 @@
 {
   "name": "decouter",
   "version": "1.1.0",
-  "main": "dist",
+  "main": "index",
   "author": "Pedram Emrouznejad (https://github.com/pemrouz)",
   "repository": {
     "type": "git",
     "url": "git://github.com/pemrouz/decouter.git"
   },
   "scripts": {
-    "ignore:build:1": "sh -c 'find ./dist/index.js -type f -exec sed -i -E \"s/function _interopRequire/\\/* istanbul ignore next *\\/\\nfunction _interopRequire/g\" {} \\;'",
-    "ignore:build:2": "sh -c 'find ./dist/index.js -type f -exec sed -i -E \"s/^(.*arguments\\[1\\] === undefined)/\\/* istanbul ignore next *\\/\\n\\1/g\" {} \\;'",
-    "ignore:build": "npm run ignore:build:1 && npm run ignore:build:2",
-    "ignore:test": "sh -c 'find ./dist/test.js -type f -exec sed -i \"s/function _interopRequire/\\/* istanbul ignore next *\\/\\nfunction _interopRequire/g\" {} \\;'",
-    "bundle": "browserify dist/client.js -o dist/decouter.js -i **/utilise/**/*.js",
-    "minify": "uglifyjs dist/decouter.js -m -c drop_console,dead_code -d client=true -o dist/decouter.min.js",
-    "gzip": "gzip -c dist/decouter.min.js > dist/decouter.min.js.gz",
-    "babel": "babel src -d dist",
-    "clean": "rm -rf dist && mkdir dist",
-    "build": "npm run clean && npm run babel && npm run bundle && npm run ignore:build && npm run minify && npm run gzip",
-    "test": "tap dist/test.js",
-    "coverage": "tap dist/test.js --cov --coverage-report=lcov",
+    "bundle": "rollup -c",
+    "minify": "uglifyjs client.bundle.js -m -c keep_fargs=false > client.min.js",
+    "gzip": "gzip -c client.min.js > client.min.js.gz",
+    "build": "npm run rollup && npm run minify && npm run gzip",
+    "rollup": "rollup -c",
+    "test": "tap test.js",
+    "coverage": "tap test.js --cov --coverage-report=lcov",
     "version": "npm run build && git add -A",
     "postversion": "git push && git push --tags"
   },
   "license": "pemrouz.mit-license.org",
   "devDependencies": {
-    "babel-cli": "*",
-    "babel-preset-es2015": "*",
     "browserenv": "*",
-    "browserify": "*",
-    "chai": "*",
-    "coveralls": "*",
-    "istanbul": "*",
-    "mocha": "*",
-    "mocha-lcov-reporter": "*",
-    "mockery": "^1.4.0",
-    "popper": "*",
+    "rollup": "^0.49.3",
+    "rollup-plugin-buble": "^0.16.0",
+    "rollup-plugin-commonjs": "^8.2.1",
+    "rollup-plugin-node-resolve": "^3.0.0",
     "tap": "^5.7.1",
-    "tape": "^4.5.1",
-    "uglify-js": "*"
+    "uglify-es": "^3.1.0"
   },
   "dependencies": {
     "utilise": "*"
