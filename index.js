@@ -83,7 +83,7 @@ if (client) {
   window.addEventListener('change', e => e.target == window && draw())
   document.addEventListener('click', e => {
     const a = e.path ? e.path.shift() : e.target
-    if (!a.matches('a[href]:not([href^=javascript]):not(.bypass)')) return
+    if (!a.matches('a[href]:not([href^=javascript]):not([bypass]), [bypass] *')) return
     if (a.origin != location.origin) return
     e.preventDefault()
     go(a.href)
