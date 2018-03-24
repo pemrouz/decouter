@@ -75,12 +75,13 @@ function segment(url) {
 }
 
 if (client) {
-  const draw = window.app && window.app.draw || document.draw || String
   window.go = go
   window.router = router
   window.router.resolve = resolve
   window.addEventListener('popstate', e => window.dispatchEvent(new CustomEvent('change')))
-  window.addEventListener('change', e => e.target == window && draw())
+  window.addEventListener('change', e => { 
+    e.target == window && window.app && app.node().render()
+  })
   document.addEventListener('click', e => {
     const a = e.path ? e.path.shift() : e.target
     if (!a.matches('a[href]:not([href^=javascript]):not([bypass])') || a.matches('[bypass] *')) return
