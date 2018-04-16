@@ -80,7 +80,7 @@ if (client) {
   window.router.resolve = resolve
   window.addEventListener('popstate', e => window.dispatchEvent(new CustomEvent('change')))
   window.addEventListener('change', e => { 
-    e.target == window && window.app && app.node().render()
+    e.target == window && window.app && app.render()
   })
   document.addEventListener('click', e => {
     const a = e.path ? e.path.shift() : e.target
