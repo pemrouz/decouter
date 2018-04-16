@@ -85,7 +85,7 @@ if (client) {
   document.addEventListener('click', e => {
     const a = e.path ? e.path.shift() : e.target
     if (!a.matches('a[href]:not([href^=javascript]):not([bypass])') || a.matches('[bypass] *')) return
-    if (a.origin != location.origin) return
+    if (is.def(a.origin) && a.origin != location.origin) return
     e.preventDefault()
     go(a.href)
   })
